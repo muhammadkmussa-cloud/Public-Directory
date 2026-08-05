@@ -106,6 +106,10 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/charities.php` / `?id=N` / `?top=1` | GET | charities list / detail + campaigns / homepage |
 | `api/donations.php` | POST | `{charity_id, campaign_id?, amount, payment_method: mpesa\|paypal\|bank, ...}` (CSRF) |
 | `api/quotes.php` | POST | `{fundi_id, name, phone, description}` → stores request + returns a pre-filled WhatsApp link (CSRF) |
+| `api/notifications.php` | GET | my notifications + unread count (login) |
+| `api/notifications.php` | POST | `{action: read\|read_all}` (login + CSRF) |
+| `api/reports.php?action=queue` | GET | moderation queue (admin) |
+| `api/reports.php` | POST | `{action: admin_resolve, report_id, status: resolved\|rejected, notes}` (admin + CSRF) |
 
 State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), which the frontend attaches automatically.
 
@@ -121,6 +125,17 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 
 ## Built
 
+- **Notifications** — bell with unread badge in the header, dropdown + full
+  notifications page; auto-created on new reviews (owner), claims and donations.
+- **Admin moderation console** (`moderation.html`) — review the community's
+  reports, resolve or reject with notes.
+- **Multilingual (EN / SW)** — language switcher in the header (persisted),
+  dictionary-based translations for UI labels; category names use the DB's
+  `name_sw` when available.
+- **PWA** — `manifest.json` + service worker (`sw.js`) on all 19 pages:
+  installable, offline app-shell cache, network-first pages.
+- **SEO** — JSON-LD structured data (LocalBusiness / Place / Person) injected
+  on business, mosque and fundi detail pages.
 - **Charities & donations** — verified charities with campaigns and progress
   bars; donate via M-Pesa STK push (Daraja; sandbox simulates when no
   credentials are set), PayPal checkout link, or bank transfer. M-Pesa and

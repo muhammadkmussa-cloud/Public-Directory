@@ -140,11 +140,11 @@
 **Tier 3 — in progress:**
 11. ✅ **Charities & donations** — campaigns, progress, M-Pesa STK push (Daraja, sandbox-able), PayPal, bank
 12. ✅ **Fundi quote requests** — stored + delivered via **WhatsApp** (wa.me pre-filled links; messaging is WhatsApp-only by design)
-13. Notifications
-14. Admin content moderation console
-15. Multilingual EN/SW/AR
-16. PWA (manifest + service worker) for mobile "app" feel
-17. SEO pass (server-render meta/JSON-LD per listing, or pre-render)
+13. ✅ **Notifications** — bell + unread badge, dropdown + page; triggered by reviews/claims/donations
+14. ✅ **Admin moderation console** — resolve/reject community reports
+15. 🟡 **Multilingual EN/SW** (AR pending) — header switcher, UI labels + DB category names
+16. ✅ **PWA** — manifest + service worker on all pages (installable, offline shell)
+17. 🟡 **SEO** — JSON-LD (LocalBusiness/Place/Person) on detail pages; full SSR/pre-render pending
 
 ---
 

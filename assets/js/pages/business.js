@@ -34,6 +34,36 @@ window.appReady.then(async () => {
     initDetailMap('bizMap', business.latitude, business.longitude, business.name, 'business.html?id=' + business.id);
     refreshSaveState('business', business.id);
     wirePhotoInput();
+  /* ---- SEO: inject JSON-LD structured data ---- */
+  (() => {
+    try {
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        'name': business.name,
+        'image': (photos && photos[0] && photos[0].photo_path) || '',
+        'telephone': business.phone || '',
+        'address': {
+          '@type': 'PostalAddress',
+          'streetAddress': business.address || '',
+          'addressLocality': business.city || '',
+          'addressRegion': business.region || '',
+          'addressCountry': business.country || 'KE',
+        },
+        'aggregateRating': business.rating_average ? {
+          '@type': 'AggregateRating',
+          'ratingValue': business.rating_average,
+          'reviewCount': business.review_count || 0,
+        } : undefined,
+        'url': window.location.href,
+        'priceRange': business.price_range || '$$',
+      };
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(ld);
+      document.head.appendChild(script);
+    } catch (e) { /* ignore */ }
+  })();
 
     // check-in button
     const checkinBtn = document.getElementById('checkinBtn');

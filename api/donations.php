@@ -107,6 +107,16 @@ $donationId = $db->insert(
     ]
 );
 
+// notify the charity's admin
+$charityAdmin = $db->fetchValue('SELECT user_id FROM charities WHERE id = ?', [$charityId]);
+if ($charityAdmin) {
+    $charityName = $db->fetchValue('SELECT name FROM charities WHERE id = ?', [$charityId]);
+    notify($db, $charityAdmin, 'donation',
+        'New donation: KSh ' . number_format($amount) . ($campaign ? ' to ' . $campaign['title'] : ''),
+        'You received a donation for ' . $charityName . ($isAnonymous ? ' (anonymous)' : ' from ' . ($donorName ?: 'a supporter')),
+        'dashboard.html');
+}
+
 // refresh campaign totals (charity totals are always computed from donations)
 if ($status === 'completed' && $campaignId) {
     $agg = $db->fetchOne(

@@ -92,4 +92,41 @@ if ($method === 'POST') {
     json_ok(['reported' => true], 201);
 }
 
+/* ================= admin: list reports (queue) ================= */
+if ($method === 'GET' && $action === 'queue') {
+    $admin = require_login();
+    if ($admin['user_type'] !== 'admin') {
+        json_err('Admins only', 403);
+    }
+    $rows = $db->fetchAll(
+        'SELECT r.id, r.reportable_id, r.reportable_type, r.reason, r.description,
+                r.status, r.admin_notes, r.created_at,
+                u.full_name AS reporter_name
+           FROM reports r
+           JOIN users u ON u.id = r.reporter_id
+          ORDER BY (r.status = \'pending\') DESC, r.created_at ASC
+          LIMIT 100'
+    );
+    json_ok($rows);
+}
+
+/* ================= admin: update report status ================= */
+if ($method === 'POST' && ($body_action = (json_body()['action'] ?? '')) === 'admin_resolve') {
+    $admin = require_login();
+    if ($admin['user_type'] !== 'admin') {
+        json_err('Admins only', 403);
+    }
+    require_csrf();
+    $b = json_body();
+    $reportId = (int)($b['report_id'] ?? 0);
+    $status = in_array($b['status'] ?? '', ['resolved', 'rejected'], true) ? $b['status'] : 'resolved';
+    $notes = trim($b['notes'] ?? '');
+
+    $db->execute(
+        'UPDATE reports SET status = ?, admin_notes = ?, resolved_by = ?, resolved_at = NOW() WHERE id = ?',
+        [$status, $notes ?: null, $admin['id'], $reportId]
+    );
+    json_ok(['resolved' => true]);
+}
+
 json_err('Unknown action', 404);

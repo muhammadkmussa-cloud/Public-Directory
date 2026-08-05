@@ -99,6 +99,21 @@ function attachReviewPhotos($db, &$reviews)
     }
 }
 
+/** Insert a notification for a user (fire-and-forget) */
+function notify($db, $userId, $type, $title, $message, $link = null, $data = null)
+{
+    if (!$userId) return;
+    try {
+        $db->insert(
+            'INSERT INTO notifications (user_id, type, title, message, link, data)
+             VALUES (?, ?, ?, ?, ?, ?)',
+            [$userId, $type, $title, $message, $link, $data ? json_encode($data) : null]
+        );
+    } catch (Throwable $e) {
+        error_log('notify() failed: ' . $e->getMessage());
+    }
+}
+
 // ---- Error handling -------------------------------------------------------
 set_exception_handler(function ($e) {
     error_log('API error: ' . $e->getMessage());

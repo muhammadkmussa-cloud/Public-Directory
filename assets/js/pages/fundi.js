@@ -15,6 +15,28 @@ window.appReady.then(async () => {
     const { fundi, portfolio, reviews } = await api('api/fundis.php?id=' + id);
     render(fundi, portfolio, reviews);
     loadSponsoredSide();
+    initDetailMap('fundiMap', fundi.latitude, fundi.longitude, fundi.full_name, 'fundi.html?id=' + fundi.id);
+    refreshSaveState('fundi', fundi.id);
+    wirePhotoInput();
+
+    /* ---- SEO: inject JSON-LD structured data ---- */
+    (() => {
+      try {
+        const ld = {
+          '@context': 'https://schema.org',
+          '@type': 'Person',
+          'name': fundi.full_name,
+          'jobTitle': fundi.profession,
+          'description': fundi.bio || '',
+          'image': fundi.profile_photo || '',
+          'url': window.location.href,
+        };
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(ld);
+        document.head.appendChild(script);
+      } catch (e) { /* ignore */ }
+    })();
 
     document.getElementById('reviewForm').addEventListener('submit', async (e) => {
       e.preventDefault();

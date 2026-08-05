@@ -135,6 +135,18 @@ if ($action === 'create') {
         // contributor counters
         $db->execute('UPDATE users SET total_reviews = total_reviews + 1 WHERE id = ?', [$user['id']]);
 
+        // notify the listing owner
+        if ($reviewableType === 'business') {
+            $ownerId = $db->fetchValue('SELECT user_id FROM businesses WHERE id = ?', [$reviewableId]);
+            $bizName = $db->fetchValue('SELECT name FROM businesses WHERE id = ?', [$reviewableId]);
+            if ($ownerId && (int)$ownerId !== (int)$user['id']) {
+                notify($db, $ownerId, 'new_review',
+                    'New ' . str_repeat('★', $rating) . ' review',
+                    $user['full_name'] . ' reviewed ' . $bizName . ': "' . mb_substr($content, 0, 80) . '"',
+                    'business.html?id=' . $reviewableId);
+            }
+        }
+
         $db->commit();
     } catch (Throwable $e) {
         $db->rollback();

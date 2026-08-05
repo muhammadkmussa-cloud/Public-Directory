@@ -18,6 +18,28 @@ window.appReady.then(async () => {
     initDetailMap('mosqueMap', mosque.latitude, mosque.longitude, mosque.name, 'mosque.html?id=' + mosque.id);
     refreshSaveState('mosque', mosque.id);
     wirePhotoInput();
+  (() => {
+    try {
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type': 'Place',
+        'name': mosque.name,
+        'description': mosque.description || '',
+        'address': {
+          '@type': 'PostalAddress',
+          'streetAddress': mosque.address || '',
+          'addressLocality': mosque.city || '',
+          'addressRegion': mosque.region || '',
+          'addressCountry': 'KE',
+        },
+        'url': window.location.href,
+      };
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(ld);
+      document.head.appendChild(script);
+    } catch (e) {}
+  })();
 
     document.getElementById('checkinBtn')?.addEventListener('click', async () => {
       if (!session.user) { toast('Please login to check in', 'error'); return; }

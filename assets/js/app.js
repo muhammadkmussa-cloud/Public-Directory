@@ -12,6 +12,42 @@ const USE_MOCK_FALLBACK = true; // show sample data when the PHP API is unreacha
 let mockMode = false;
 
 /* ============================================================
+ * i18n (EN / SW) — lightweight dictionary
+ * ============================================================ */
+const I18N = {
+  en: {
+    'Write a Review': 'Write a Review',
+    'View all': 'View all',
+    'Open': 'Open',
+    'Verified': 'Verified',
+    'Sponsored': 'Sponsored',
+    'Saved to your bookmarks': 'Saved to your bookmarks',
+    'Removed from bookmarks': 'Removed from bookmarks',
+  },
+  sw: {
+    'Write a Review': 'Andika Tathmini',
+    'View all': 'Ona Zote',
+    'Open': 'Funguliwa',
+    'Verified': 'Imethibitishwa',
+    'Sponsored': 'Inafadhiliwa',
+    'Saved to your bookmarks': 'Imehifadhiwa',
+    'Removed from bookmarks': 'Imeondolewa kwenye hifadhi',
+  },
+};
+let lang = localStorage.getItem('umma_lang') || 'en';
+
+function t(str) {
+  const dict = I18N[lang] || I18N.en;
+  return dict[str] || str;
+}
+function setLang(l) {
+  lang = ['en', 'sw'].includes(l) ? l : 'en';
+  localStorage.setItem('umma_lang', lang);
+}
+window.t = t;
+window.setLang = setLang;
+
+/* ============================================================
  * SVG icon system (Yelp-style line icons)
  * ============================================================ */
 const ICONS = {
@@ -41,6 +77,7 @@ const ICONS = {
   flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
   trophy: '<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h3"/><path d="M17 6h3a2 2 0 0 1 0 4h-3"/>',
   starBadge: '<path d="M12 2l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 19.9l1.1-6.5L2.6 8.8l6.5-.9L12 2z"/>',
+  bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
 };
 
 const CATEGORY_ICONS = {
@@ -185,6 +222,13 @@ const HEADER_HTML = `
       <a class="nav-link" href="charities.html">Charities</a>
       <a class="btn btn-primary btn-write" href="businesses.html">${icon('pen', 14)} Write a Review</a>
       <div class="nav-auth" id="navAuth"></div>
+      <button class="btn btn-ghost nav-bell" id="notifBell" aria-label="Notifications" title="Notifications">
+        ${icon('bell', 18)} <span class="notif-dot" id="notifDot" hidden></span>
+      </button>
+      <div class="lang-switch" id="langSwitch">
+        <button class="lang-btn ${lang === 'en' ? 'active' : ''}" data-lang="en">EN</button>
+        <button class="lang-btn ${lang === 'sw' ? 'active' : ''}" data-lang="sw">SW</button>
+      </div>
     </div>
   </div>
 </nav>
@@ -278,17 +322,98 @@ function renderAuthNav() {
 
 async function boot() {
   renderLayout();
+  // language switcher
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setLang(btn.dataset.lang);
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b === btn));
+      toast(lang === 'sw' ? 'Lugha imebadilishwa kuwa Kiswahili' : 'Language set to English');
+      setTimeout(() => window.location.reload(), 400);
+    });
+  });
   try {
     session.user = await api('api/auth.php?action=me');
   } catch (e) {
     session.user = null;
   }
   renderAuthNav();
+  refreshNotifBadge();
   if (mockMode) {
     const banner = document.getElementById('mockBanner');
     if (banner) banner.hidden = false;
   }
 }
+
+/* ============================================================
+ * Notifications (bell + dropdown)
+ * ============================================================ */
+async function refreshNotifBadge() {
+  const dot = document.getElementById('notifDot');
+  if (!dot) return;
+  if (!session.user) { dot.hidden = true; return; }
+  try {
+    const d = await api('api/notifications.php?unread=1');
+    dot.hidden = !(d.unread_count > 0);
+    dot.textContent = d.unread_count > 9 ? '9+' : d.unread_count;
+  } catch (e) { dot.hidden = true; }
+}
+
+function renderNotifDropdown() {
+  let panel = document.getElementById('notifPanel');
+  if (panel) { panel.remove(); return; } // toggle close
+  panel = document.createElement('div');
+  panel.id = 'notifPanel';
+  panel.className = 'notif-panel';
+  panel.innerHTML = '<div class="notif-loading">Loading…</div>';
+  document.body.appendChild(panel);
+
+  api('api/notifications.php').then(d => {
+    const items = (d && d.items) || [];
+    panel.innerHTML = `
+      <div class="notif-head">
+        <b>Notifications</b>
+        ${items.length ? '<button class="btn btn-ghost btn-xs" id="notifReadAll">Mark all read</button>' : ''}
+      </div>
+      ${items.length
+        ? items.slice(0, 10).map(n => `
+            <a class="notif-item ${n.is_read ? '' : 'unread'}" href="${esc(n.link || 'profile.html')}" data-notif-id="${n.id}">
+              <b>${esc(n.title)}</b>
+              <span class="muted small">${esc(n.message)}</span>
+              <span class="muted small">${timeAgo(n.created_at)}</span>
+            </a>`).join('')
+        : '<p class="muted center" style="padding:1rem 0;">No notifications yet</p>'}
+      <a class="notif-all" href="notifications.html">View all</a>`;
+
+    const readAll = panel.querySelector('#notifReadAll');
+    if (readAll) readAll.addEventListener('click', async () => {
+      await api('api/notifications.php', { method: 'POST', body: { action: 'read_all' } });
+      refreshNotifBadge();
+      panel.querySelectorAll('.notif-item').forEach(i => i.classList.remove('unread'));
+      readAll.remove();
+    });
+    panel.querySelectorAll('.notif-item').forEach(item => {
+      item.addEventListener('click', () => {
+        api('api/notifications.php', { method: 'POST', body: { action: 'read', id: item.dataset.notifId } }).then(refreshNotifBadge).catch(() => {});
+      });
+    });
+  }).catch(() => {
+    panel.innerHTML = '<p class="muted center" style="padding:1rem 0;">Could not load notifications</p>';
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click', (e) => {
+      const p = document.getElementById('notifPanel');
+      if (p && !p.contains(e.target) && !e.target.closest('#notifBell')) p.remove();
+    }, 0);
+  }, 0);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#notifBell')) {
+    if (!session.user) { toast('Please login to see notifications', 'error'); return; }
+    renderNotifDropdown();
+  }
+});
 
 /* ============================================================
  * Review photos

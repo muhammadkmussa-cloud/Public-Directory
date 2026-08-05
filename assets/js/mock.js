@@ -278,9 +278,20 @@ window.mockApi = (function () {
     }
 
     if (path.startsWith('api/reports.php')) {
+      if (action === 'queue') {
+        if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+        return [
+          { id: 1, reportable_id: 2, reportable_type: 'review', reason: 'spam', description: 'Looks like a fake review promoting a competitor.', status: 'pending', reporter_name: 'Yusuf Omar', created_at: new Date(Date.now() - 86400000).toISOString() },
+          { id: 2, reportable_id: 1, reportable_type: 'business', reason: 'closed', description: 'This restaurant has permanently closed.', status: 'pending', reporter_name: 'Amina Hassan', created_at: new Date(Date.now() - 86400000 * 2).toISOString() },
+        ];
+      }
       if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
       const b = parseBody(opts);
       if (b.action === 'create') return { reported: true };
+      if (b.action === 'admin_resolve') {
+        if (mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+        return { resolved: true };
+      }
       if (action === 'mine') return [];
       throw Object.assign(new Error('Unknown action'), { status: 404 });
     }
@@ -314,6 +325,15 @@ window.mockApi = (function () {
       return { quote_id: 7, whatsapp_link: 'https://wa.me/254712888999?text=' + encodeURIComponent("Salaam! I'm " + (b.name || '') + ". I'd like a quote for:\n\n" + (b.description || '')), fundi_name: 'Abdullahi Said', fundi_wa: '254712888999', message: 'Request saved — send it to Abdullahi Said on WhatsApp' };
     }
 
+    if (path.startsWith('api/notifications.php')) {
+      if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+      if (method === 'GET' && url.searchParams.has('unread')) return { unread_count: mockUser && mockNotifRead < mockNotifs.length ? mockNotifs.length - mockNotifRead : 0 };
+      if (method === 'GET') return { items: mockNotifs.map(n => ({ ...n, is_read: n.id <= mockNotifRead ? 1 : 0 })), unread_count: mockNotifs.length - mockNotifRead };
+      const b = parseBody(opts);
+      if (b.action === 'read_all') { mockNotifRead = mockNotifs.length; return { read_all: true }; }
+      if (b.action === 'read') { mockNotifRead = Math.max(mockNotifRead, Number(b.id)); return { read: true }; }
+    }
+
     throw Object.assign(new Error('Not found in mock: ' + path), { status: 404 });
   }
 
@@ -327,6 +347,12 @@ window.mockApi = (function () {
   }
 
   let mockUser = null;
+  let mockNotifRead = 0;
+  const mockNotifs = [
+    { id: 3, type: 'new_review', title: 'New ★★★★★ review', message: 'Yusuf Omar reviewed Al-Barakah Restaurant: "The chicken biryani is incredible…"', link: 'business.html?id=1', is_read: 0, created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
+    { id: 2, type: 'donation', title: 'New donation: KSh 5,000', message: 'You received a donation for Nuru Medical Fund.', link: 'dashboard.html', is_read: 0, created_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 1, type: 'system', title: 'Welcome to Umma Directory!', message: 'Your account is ready.', link: 'profile.html', is_read: 1, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
+  ];
   const mockFavorites = new Set(['business:1', 'mosque:3']); // demo user's saved items
 
   // wrap: return {success:true,data:...} shape or throw with status

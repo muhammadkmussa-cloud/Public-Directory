@@ -6,6 +6,9 @@
   <title>Umma Directory — Discover Muslim-Friendly Businesses, Mosques & Fundis</title>
   <meta name="description" content="Find trusted businesses, mosques, fundis and charities in your community. Read reviews, view prayer times and connect with local Muslim services.">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#d32323">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/img/favicon.svg">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -146,5 +149,12 @@
   <script src="assets/js/app.js"></script>
   <script src="assets/js/mock.js"></script>
   <script src="assets/js/pages/home.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

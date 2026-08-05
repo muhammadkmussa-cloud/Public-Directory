@@ -28,6 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'UPDATE businesses SET user_id = ?, is_claimed = 1, claimed_at = NOW() WHERE id = ?',
             [$user['id'], $id]
         );
+        if ($user['user_type'] === 'admin') {
+            notify($db, $user['id'], 'claim_request', 'Listing claimed',
+                'You claimed the listing. You now have owner controls.', 'dashboard.html');
+        }
         json_ok(['claimed' => true]);
     }
 
