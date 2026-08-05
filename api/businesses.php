@@ -268,6 +268,12 @@ if ($openNow) {
     $params[] = $now;
 }
 
+// distance-based search (Near me): adds distance_km + radius filter
+$dist = distance_clause('b');
+if ($dist['where'] !== '') {
+    $where[] = $dist['where'];
+}
+
 $whereSql = implode(' AND ', $where);
 
 $total = (int)$db->fetchValue("SELECT COUNT(*) FROM businesses b WHERE $whereSql", $params);
@@ -278,12 +284,15 @@ $orderMap = [
     'reviews' => 'b.review_count DESC',
     'name' => 'b.name ASC',
 ];
+if ($dist['has']) {
+    $orderMap['distance'] = 'distance_km ASC';
+}
 $orderBy = $orderMap[$sort] ?? $orderMap['rating'];
 
 $items = $db->fetchAll(
     "SELECT b.id, b.name, b.slug, b.city, b.region, b.price_range, b.short_description,
             b.is_verified, b.is_open, b.rating_average, b.review_count, b.checkin_count,
-            b.latitude, b.longitude,
+            b.latitude, b.longitude${dist['select'] ? ',' . $dist['select'] : ''},
             (SELECT c.name FROM categories c
                JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
               ORDER BY bc.is_primary DESC LIMIT 1) AS category_name,

@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Businesses — Umma Directory</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Umma Directory">
+  <meta property="og:title" content="Businesses — Umma Directory">
+  <meta property="og:description" content="Find halal businesses, mosques with prayer times, and trusted fundis near you.">
+  <meta property="og:url" content="https://yourdomain.com/businesses.html">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="description" content="Search halal businesses by category, city and rating.">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#d32323">
@@ -68,11 +74,15 @@
             <option value="rating">Top rated</option>
             <option value="reviews">Most reviewed</option>
             <option value="name">Name (A–Z)</option>
+            <option value="distance">Distance</option>
           </select>
         </div>
         <div class="filter checkbox-filter-wrap">
           <label class="checkbox-filter"><input type="checkbox" name="open_now" value="1" id="f-open"> Open now</label>
         </div>
+        <input type="hidden" name="lat" id="f-lat">
+        <input type="hidden" name="lng" id="f-lng">
+        <input type="hidden" name="radius" id="f-radius" value="50">
         <div class="filter">
           <button class="btn btn-primary btn-block" type="submit">Apply filters</button>
           <a class="btn btn-ghost btn-block" href="businesses.html" style="margin-top:.4rem;">Clear</a>
@@ -80,6 +90,7 @@
       </form>
 
       <div class="result-bar">
+        <button class="btn btn-outline btn-sm" id="nearMeBtn" type="button" title="Use your location to find nearby results">📍 Near me</button>
         <span id="resultBarSpacer"></span>
         <div class="view-toggle" id="viewToggle">
           <button class="view-btn active" data-view="list">List</button>
@@ -100,6 +111,7 @@
   <div id="site-footer"></div>
 
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/share.js"></script>
   <script src="assets/js/mock.js"></script>
   <script src="assets/js/map.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

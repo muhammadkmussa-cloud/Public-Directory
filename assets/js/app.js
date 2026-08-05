@@ -97,6 +97,8 @@ const ICONS = {
   trophy: '<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h3"/><path d="M17 6h3a2 2 0 0 1 0 4h-3"/>',
   starBadge: '<path d="M12 2l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 19.9l1.1-6.5L2.6 8.8l6.5-.9L12 2z"/>',
   bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+  loc: '<path d="M12 22s8-4 8-10a8 8 0 1 0-16 0c0 6 8 10 8 10z"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" fill="none" opacity=".35"/>',
 };
 
 const CATEGORY_ICONS = {
@@ -334,6 +336,7 @@ function renderAuthNav() {
       <a class="nav-link user-chip" href="profile.html">
         <span class="avatar">${initial}</span> ${esc(u.full_name || u.username)}
       </a>
+      ${u.email_verified === false ? '<a class="nav-link verify-pill" href="verify.html" title="Confirm your email">Confirm email</a>' : ''}
       <a class="nav-link" href="dashboard.html">Dashboard</a>
       <button class="btn btn-ghost" id="logoutBtn">Logout</button>`;
     const lb = document.getElementById('logoutBtn');
@@ -542,6 +545,19 @@ function saveBtnHtml(type, id) {
   return `<button class="save-btn" data-save-type="${type}" data-save-id="${id}" aria-label="Save" title="Save">${icon('bookmark', 16)}</button>`;
 }
 
+/** Share icon-button for cards — works with share.js's delegated listener */
+function shareBtnHtml(title, url, text) {
+  return `<button class="share-btn" data-share-title="${esc(title || '')}" data-share-url="${esc(url || '')}" data-share-text="${esc(text || '')}" aria-label="Share" title="Share">${icon('share', 16)}</button>`;
+}
+
+/** Yelp-style "1.2 km" distance badge (shown when API returns distance_km) */
+function distanceBadge(km) {
+  if (km === undefined || km === null || isNaN(Number(km))) return '';
+  const d = Number(km);
+  const label = d < 1 ? Math.round(d * 1000) + ' m' : (Math.round(d * 10) / 10) + ' km';
+  return `<span class="distance-badge">${icon('loc', 11)} ${label}</span>`;
+}
+
 function setSavedState(btn, saved) {
   btn.classList.toggle('saved', !!saved);
   btn.innerHTML = saved ? icon('bookmarkFill', 16) : icon('bookmark', 16);
@@ -598,12 +614,14 @@ function businessCard(b) {
         <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span>
         <span class="muted">(${b.review_count || 0})</span>
         <span class="result-meta"> · ${esc(b.price_range || '$')}${b.category_name ? ' · ' + esc(b.category_name) : ''}</span>
+        ${distanceBadge(b.distance_km)}
       </div>
       ${b.is_open ? '<span class="open-now">Open</span>' : ''}
       <p class="result-snippet">${esc(b.short_description || '')}</p>
       <div class="result-actions">
         ${b.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(b.phone)}">${icon('phone', 13)} Call</a>` : ''}
         ${b.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 13)} Directions</a>` : ''}
+        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(b.name)}" data-share-url="business.html?id=${b.id}" data-share-text="${esc(b.short_description || b.name)}">${icon('share', 13)} Share</button>
         <span class="result-loc">${icon('pin', 12)} ${esc(b.city || '')}</span>
       </div>
     </div>
@@ -627,12 +645,14 @@ function mosqueCard(m) {
         <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span>
         <span class="muted">(${m.review_count || 0})</span>
         <span class="result-meta"> · Mosque</span>
+        ${distanceBadge(m.distance_km)}
       </div>
       ${m.next_prayer ? `<span class="prayer-now"><span>${icon('clock', 13)} Next: <b>${esc(m.next_prayer.name)}</b> at ${esc(m.next_prayer.time)}</span></span>` : ''}
       <p class="result-snippet">${esc(m.address || '')}</p>
       <div class="result-actions">
         ${m.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(m.phone)}">${icon('phone', 13)} Call</a>` : ''}
         ${m.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 13)} Directions</a>` : ''}
+        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(m.name)}" data-share-url="mosque.html?id=${m.id}" data-share-text="${esc(m.address || m.name)}">${icon('share', 13)} Share</button>
         <span class="result-loc">${icon('pin', 12)} ${esc(m.city || '')}</span>
       </div>
     </div>
@@ -657,12 +677,14 @@ function fundiCard(f) {
         <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span>
         <span class="muted">(${f.review_count || 0})</span>
         <span class="result-meta"> · ${esc(f.profession)}${f.years_experience ? ' · ' + f.years_experience + ' yrs' : ''}</span>
+        ${distanceBadge(f.distance_km)}
       </div>
       <div class="chips">${skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
       <p class="result-snippet">${esc(f.bio || '')}</p>
       <div class="result-actions">
         ${f.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(f.phone)}">${icon('phone', 13)} Call</a>` : ''}
         ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 13)} WhatsApp</a>` : ''}
+        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(f.full_name)}" data-share-url="fundi.html?id=${f.id}" data-share-text="${esc(f.profession || f.full_name)}">${icon('share', 13)} Share</button>
         <span class="result-loc">${icon('pin', 12)} ${esc(f.city || '')}${f.hourly_rate_min ? ' · ' + fmtMoney(f.hourly_rate_min) + '/hr' : ''}</span>
       </div>
     </div>
@@ -679,6 +701,7 @@ function businessTile(b) {
         : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
       ${saveBtnHtml('business', b.id)}
+      ${shareBtnHtml(b.name, 'business.html?id=' + b.id, b.short_description || b.name)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
@@ -700,6 +723,7 @@ function mosqueTile(m) {
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
       ${saveBtnHtml('mosque', m.id)}
+      ${shareBtnHtml(m.name, 'mosque.html?id=' + m.id, m.address || m.name)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
@@ -725,6 +749,7 @@ function charityCard(c) {
         ? `<img src="${esc(c.cover_photo)}" alt="${esc(c.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('heart', 34)}</div>`}
       ${c.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+      ${shareBtnHtml(c.name, 'charity.html?id=' + c.id, c.category || c.name)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="charity.html?id=${c.id}">${esc(c.name)}</a></h3>
@@ -749,6 +774,7 @@ function fundiTile(f) {
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
       ${saveBtnHtml('fundi', f.id)}
+      ${shareBtnHtml(f.full_name, 'fundi.html?id=' + f.id, f.profession || f.full_name)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>

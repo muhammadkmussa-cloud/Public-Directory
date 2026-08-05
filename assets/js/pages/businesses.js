@@ -1,5 +1,5 @@
 /**
- * Businesses listing page — list + map toggle
+ * Businesses listing page — list + map toggle + distance ("Near me") search
  */
 'use strict';
 
@@ -8,16 +8,15 @@ window.appReady.then(async () => {
   const resultsEl = document.getElementById('businessResults');
   const countEl = document.getElementById('resultCount');
   const pagEl = document.getElementById('pagination');
-  const mapContainer = document.getElementById('mapContainer');
-  const viewToggle = document.getElementById('viewToggle');
+  const nearMeBtn = document.getElementById('nearMeBtn');
 
   let lastData = null;      // raw API response (for map pins)
   let lastAds = [];
-  let mapShown = false;
+  let userLoc = null;       // { lat, lng } after "Near me" is used
 
   // Prefill from URL
   const params = new URLSearchParams(window.location.search);
-  for (const [key, selId] of [['q', 'f-q'], ['category', 'f-category'], ['location', 'f-city'], ['price', 'f-price'], ['min_rating', 'f-rating'], ['sort', 'f-sort']]) {
+  for (const [key, selId] of [['q', 'f-q'], ['category', 'f-category'], ['location', 'f-city'], ['price', 'f-price'], ['min_rating', 'f-rating'], ['sort', 'f-sort'], ['lat', 'f-lat'], ['lng', 'f-lng'], ['radius', 'f-radius']]) {
     const el = document.getElementById(selId);
     if (el && params.get(key)) el.value = params.get(key);
   }
@@ -34,6 +33,35 @@ window.appReady.then(async () => {
     }
     return out;
   }
+
+  // toggle the "Near me" visual state
+  function setNearMeState(active) {
+    if (!nearMeBtn) return;
+    nearMeBtn.classList.toggle('active', !!active);
+    nearMeBtn.textContent = active ? '📍 Near me · active' : '📍 Near me';
+  }
+  setNearMeState(params.get('lat') && params.get('lng'));
+
+  /** Use the browser's geolocation, then reload with lat/lng/radius + distance sort */
+  nearMeBtn.addEventListener('click', async () => {
+    try {
+      const pos = await getCurrentPosition();
+      userLoc = { lat: pos.lat, lng: pos.lng };
+      document.getElementById('f-lat').value = pos.lat.toFixed(6);
+      document.getElementById('f-lng').value = pos.lng.toFixed(6);
+      document.getElementById('f-radius').value = document.getElementById('f-radius').value || '50';
+      const sortEl = document.getElementById('f-sort');
+      if (sortEl) sortEl.value = 'distance';
+      setNearMeState(true);
+      history.replaceState(null, '', '?' + new URLSearchParams(formData()).toString());
+      await load();
+      if (window.wireResultsMapToggle && typeof mapToggle !== 'undefined' && mapToggle.isMapShown()) {
+        mapToggle.showMap(); // re-render + center on user via onMapShown
+      }
+    } catch (e) {
+      toast(e.message || 'Could not get your location', 'error');
+    }
+  });
 
   async function load() {
     const qs = new URLSearchParams(formData()).toString();
@@ -56,7 +84,7 @@ window.appReady.then(async () => {
 
     resultsEl.innerHTML = cards.length
       ? cards.join('')
-      : emptyState('No businesses found', 'Try adjusting your filters.', '<a class="btn btn-primary btn-sm" href="businesses.html">View all businesses</a>');
+      : emptyState('No businesses found', 'Try adjusting your filters, or move your location marker.', '<a class="btn btn-primary btn-sm" href="businesses.html">View all businesses</a>');
 
     // populate filter options (once)
     if (data.categories && document.getElementById('f-category').options.length <= 1) {
@@ -80,38 +108,24 @@ window.appReady.then(async () => {
 
     pagEl.innerHTML = paginationHtml(data.page, data.pages, qs);
 
-    if (mapShown) showMap();
+    if (typeof mapToggle !== 'undefined' && mapToggle.isMapShown()) mapToggle.showMap();
   }
 
-  function showMap() {
-    mapShown = true;
-    resultsEl.hidden = true;
-    pagEl.hidden = true;
-    mapContainer.hidden = false;
-    const items = (lastData.items || []).map(i => ({ ...i, type: 'business', url: 'business.html?id=' + i.id }));
-    if (!renderResultsMap('mapContainer', items) && mapContainer) {
-      mapContainer.innerHTML = '<div class="empty-state"><p>No locations available to map.</p></div>';
-    }
-  }
-
-  function showList() {
-    mapShown = false;
-    resultsEl.hidden = false;
-    pagEl.hidden = false;
-    mapContainer.hidden = true;
-  }
-
-  viewToggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('.view-btn');
-    if (!btn) return;
-    viewToggle.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b === btn));
-    if (btn.dataset.view === 'map') showMap(); else showList();
+  // shared List/Map toggle; onMapShown centers on the user when "Near me" is active
+  const mapToggle = wireResultsMapToggle({
+    toggleId: 'viewToggle',
+    containerId: 'mapContainer',
+    resultsEl,
+    pagEl,
+    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'business', url: 'business.html?id=' + i.id })),
+    onMapShown: (map) => {
+      if (userLoc) addUserMarker(map, userLoc.lat, userLoc.lng);
+    },
   });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     history.replaceState(null, '', '?' + new URLSearchParams(formData()).toString());
-    showList();
     load();
   });
 

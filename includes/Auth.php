@@ -63,8 +63,82 @@ class Auth
             return ['ok' => false, 'error' => 'Registration failed, please try again'];
         }
 
-        self::login($username, $password); // auto-login after register
-        return ['ok' => true, 'user' => self::currentUser()];
+        $token = self::sendVerificationEmail($id, $email, $username); // emails a one-time link
+        self::login($username, $password); // auto-login after register (soft-gated)
+        $user = self::currentUser();
+        $user['email_verified'] = false;
+        if (APP_ENV === 'development') {
+            $user['verification_link'] = (APP_URL ?: '') . '/verify.html?token=' . $token;
+        }
+        return ['ok' => true, 'user' => $user];
+    }
+
+    /* ------------------------------------------------------------------
+     * Email verification
+     * ------------------------------------------------------------------ */
+
+    /** Generate a token, store it, and email the one-time confirmation link. */
+    public static function sendVerificationEmail($userId, $email, $username)
+    {
+        $token = bin2hex(random_bytes(32));
+        self::db()->execute(
+            'INSERT INTO email_verifications (user_id, token, expires_at, used)
+             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), 0)',
+            [$userId, $token]
+        );
+
+        $link = (APP_URL ?: '') . '/verify.html?token=' . $token;
+        $subject = 'Confirm your email — ' . APP_NAME;
+        $message = "Assalamu alaikum" . ($username ? " $username" : '') . ",\n\n"
+                 . "Welcome to " . APP_NAME . "! Please confirm your email address by clicking the link below:\n\n"
+                 . "$link\n\n"
+                 . "This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.\n\n"
+                 . '— ' . APP_NAME . ' Team';
+        @mail($email, $subject, $message, 'From: ' . SMTP_FROM_NAME . ' <' . SMTP_FROM_EMAIL . '>');
+
+        return $token;
+    }
+
+    /** Verify a user with a one-time token. Returns ['ok'=>true] or an error. */
+    public static function verifyEmail($token)
+    {
+        if (!is_string($token) || strlen($token) < 32) {
+            return ['ok' => false, 'error' => 'Invalid verification link'];
+        }
+        $row = self::db()->fetchOne(
+            'SELECT * FROM email_verifications WHERE token = ? AND used = 0 AND expires_at > NOW()',
+            [$token]
+        );
+        if (!$row) {
+            return ['ok' => false, 'error' => 'This verification link is invalid or has expired. Request a new one.'];
+        }
+        self::db()->execute('UPDATE users SET is_verified = 1 WHERE id = ?', [$row['user_id']]);
+        self::db()->execute('UPDATE email_verifications SET used = 1 WHERE id = ?', [$row['id']]);
+        return ['ok' => true, 'user_id' => (int)$row['user_id']];
+    }
+
+    /**
+     * Re-send a verification email to an unverified account (rate-limited at the API).
+     * Never reveals whether the email exists.
+     */
+    public static function resendVerification($email)
+    {
+        $email = strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Invalid email address'];
+        }
+        $user = self::db()->fetchOne(
+            'SELECT id, username, email FROM users WHERE email = ? AND is_verified = 0 AND is_active = 1',
+            [$email]
+        );
+        if (!$user) {
+            return ['ok' => true, 'message' => 'If that account exists and is unverified, a new confirmation link has been sent.'];
+        }
+        $token = self::sendVerificationEmail($user['id'], $user['email'], $user['username']);
+        if (APP_ENV === 'development') {
+            return ['ok' => true, 'message' => 'Verification email sent', 'verification_link' => (APP_URL ?: '') . '/verify.html?token=' . $token];
+        }
+        return ['ok' => true, 'message' => 'If that account exists and is unverified, a new confirmation link has been sent.'];
     }
 
     /* ------------------------------------------------------------------
@@ -103,6 +177,16 @@ class Auth
         // success → clear any lockout for this account
         unset($_SESSION['lockout'][$failKey]);
 
+        self::startSession((int)$user['id']);
+        return ['ok' => true, 'user' => self::currentUser()];
+    }
+
+    /**
+     * Issue a session for a user id (used by password login and OAuth).
+     * Records a revocable token in user_sessions, updates last_login.
+     */
+    public static function startSession($userId)
+    {
         session_regenerate_id(true);
 
         // Issue a session token recorded in user_sessions so that we can revoke
@@ -112,25 +196,113 @@ class Auth
             self::db()->insert(
                 'INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
                  VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ' . (int)SESSION_LIFETIME . ' SECOND))',
-                [(int)$user['id'], $token, $_SERVER['REMOTE_ADDR'] ?? null, substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)]
+                [$userId, $token, $_SERVER['REMOTE_ADDR'] ?? null, substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)]
             );
         } catch (Throwable $e) {
             // user_sessions table may be missing on older installs — proceed
             // without token-based revocation rather than breaking login.
             $token = '';
-            error_log('Auth::login user_sessions insert failed: ' . $e->getMessage());
+            error_log('Auth::startSession user_sessions insert failed: ' . $e->getMessage());
         }
 
-        $_SESSION['user_id']       = (int)$user['id'];
+        $_SESSION['user_id']       = $userId;
         $_SESSION['logged_in']     = true;
         $_SESSION['umdir_auth_token'] = $token;
 
-        self::db()->execute('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
+        self::db()->execute('UPDATE users SET last_login = NOW() WHERE id = ?', [$userId]);
 
-        // Invalidate any cached user from earlier in this request (e.g. register → login).
+        // Invalidate any cached user from earlier in this request.
         self::$currentUser = null;
         self::$currentUserLoaded = false;
+    }
 
+    /* ------------------------------------------------------------------
+     * OAuth (Google sign-in)
+     * ------------------------------------------------------------------ */
+
+    /**
+     * Find or create a user for a verified OAuth identity, then log them in.
+     *
+     * @param string $provider        'google'
+     * @param string $providerUserId  Google's stable sub/ID
+     * @param array  $profile         ['email' =>, 'name' =>, 'picture' =>]
+     * @return array ['ok'=>true,'user'=>...] or ['ok'=>false,'error'=>...]
+     */
+    public static function findOrCreateOAuthUser($provider, $providerUserId, $profile)
+    {
+        $email = strtolower(trim($profile['email'] ?? ''));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Google did not return a valid email address'];
+        }
+        $db = self::db();
+
+        // 1) existing link → log in
+        $link = $db->fetchOne(
+            'SELECT user_id FROM oauth_links WHERE provider = ? AND provider_user_id = ?',
+            [$provider, $providerUserId]
+        );
+        if ($link) {
+            $user = $db->fetchOne('SELECT id, is_active FROM users WHERE id = ?', [$link['user_id']]);
+            if (!$user) {
+                $db->execute('DELETE FROM oauth_links WHERE id = ?', [$link['id']]);
+            } elseif ((int)$user['is_active'] !== 1) {
+                return ['ok' => false, 'error' => 'This account has been disabled'];
+            } else {
+                self::startSession((int)$user['id']);
+                return ['ok' => true, 'user' => self::currentUser()];
+            }
+        }
+
+        // 2) matching email on a local account → link + log in
+        $existing = $db->fetchOne(
+            'SELECT id, is_active, is_verified FROM users WHERE email = ?',
+            [$email]
+        );
+        if ($existing) {
+            if ((int)$existing['is_active'] !== 1) {
+                return ['ok' => false, 'error' => 'This account has been disabled'];
+            }
+            $db->insert(
+                'INSERT INTO oauth_links (user_id, provider, provider_user_id) VALUES (?, ?, ?)',
+                [(int)$existing['id'], $provider, $providerUserId]
+            );
+            $db->execute('UPDATE users SET is_verified = 1 WHERE id = ?', [$existing['id']]);
+            self::startSession((int)$existing['id']);
+            return ['ok' => true, 'user' => self::currentUser()];
+        }
+
+        // 3) brand-new account — Google has already verified the email
+        $name = trim($profile['name'] ?? '');
+        $base = strtolower(preg_replace('/[^A-Za-z0-9_]/', '', explode('@', $email)[0]));
+        if (strlen($base) < 3) {
+            $base = 'user';
+        }
+        $username = $base;
+        $suffix = 1;
+        while ($db->fetchOne('SELECT id FROM users WHERE username = ?', [$username])) {
+            $username = $base . ($suffix++);
+        }
+
+        $id = $db->insert(
+            'INSERT INTO users (username, email, password_hash, full_name, profile_photo, user_type, is_active, is_verified)
+             VALUES (?, ?, ?, ?, ?, \'regular\', 1, 1)',
+            [
+                $username,
+                $email,
+                // unguessable random hash — account is OAuth-only (password login never used)
+                password_hash(bin2hex(random_bytes(24)), PASSWORD_BCRYPT, ['cost' => HASH_COST]),
+                $name !== '' ? $name : null,
+                $profile['picture'] ?? null,
+            ]
+        );
+        if (!$id) {
+            return ['ok' => false, 'error' => 'Could not create your account — please try again'];
+        }
+        $db->insert(
+            'INSERT INTO oauth_links (user_id, provider, provider_user_id) VALUES (?, ?, ?)',
+            [$id, $provider, $providerUserId]
+        );
+        self::startSession($id);
         return ['ok' => true, 'user' => self::currentUser()];
     }
 
@@ -192,6 +364,10 @@ class Auth
              FROM users WHERE id = ?',
             [$_SESSION['user_id']]
         );
+        if (self::$currentUser) {
+            // friendly alias the frontend uses to show the "Confirm email" state
+            self::$currentUser['email_verified'] = (int)self::$currentUser['is_verified'] === 1;
+        }
         return self::$currentUser;
     }
 

@@ -10,10 +10,12 @@ const APP_SHELL = [
   'mosques.html',
   'fundis.html',
   'charities.html',
+  'verify.html',
   'assets/css/style.css',
   'assets/js/app.js',
   'assets/js/mock.js',
   'assets/js/map.js',
+  'assets/js/share.js',
 ];
 
 self.addEventListener('install', (event) => {

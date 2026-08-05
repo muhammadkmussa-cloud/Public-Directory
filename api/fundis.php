@@ -85,6 +85,7 @@ if (isset($_GET['top'])) {
 $q      = trim($_GET['q'] ?? '');
 $skill  = trim($_GET['skill'] ?? '');
 $city   = trim($_GET['city'] ?? '');
+$sort   = $_GET['sort'] ?? 'rating';
 $page   = max(1, (int)($_GET['page'] ?? 1));
 $perPage = ITEMS_PER_PAGE;
 $offset = ($page - 1) * $perPage;
@@ -104,6 +105,13 @@ if ($city !== '') {
     $where[] = 'f.city = ?';
     $params[] = $city;
 }
+
+// distance-based search (Near me)
+$dist = distance_clause('f');
+if ($dist['where'] !== '') {
+    $where[] = $dist['where'];
+}
+
 $whereSql = implode(' AND ', $where);
 
 $total = (int)$db->fetchValue(
@@ -112,15 +120,26 @@ $total = (int)$db->fetchValue(
 );
 $pages = max(1, (int)ceil($total / $perPage));
 
+$orderMap = [
+    'rating' => 'f.rating_average DESC, f.review_count DESC',
+    'reviews' => 'f.review_count DESC',
+    'name' => 'f.profession ASC',
+];
+if ($dist['has']) {
+    $orderMap['distance'] = 'distance_km ASC';
+}
+$orderBy = $orderMap[$sort] ?? $orderMap['rating'];
+
 $items = $db->fetchAll(
     "SELECT f.id, f.profession, f.profession_other, f.years_experience, f.city, f.region,
             f.is_verified, f.rating_average, f.review_count, f.hourly_rate_min,
             f.hourly_rate_max, f.skills, f.phone, f.whatsapp,
+            f.latitude, f.longitude${dist['select'] ? ',' . $dist['select'] : ''},
             u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
        FROM fundis f
        JOIN users u ON u.id = f.user_id
       WHERE $whereSql
-      ORDER BY f.rating_average DESC, f.review_count DESC
+      ORDER BY $orderBy
       LIMIT $perPage OFFSET $offset",
     $params
 );

@@ -97,6 +97,7 @@ if (isset($_GET['top'])) {
 /* ================= list ================= */
 $q      = trim($_GET['q'] ?? '');
 $city   = trim($_GET['city'] ?? '');
+$sort   = $_GET['sort'] ?? 'rating';
 $page   = max(1, (int)($_GET['page'] ?? 1));
 $perPage = ITEMS_PER_PAGE;
 $offset = ($page - 1) * $perPage;
@@ -112,19 +113,36 @@ if ($city !== '') {
     $where[] = 'm.city = ?';
     $params[] = $city;
 }
+
+// distance-based search (Near me)
+$dist = distance_clause('m');
+if ($dist['where'] !== '') {
+    $where[] = $dist['where'];
+}
+
 $whereSql = implode(' AND ', $where);
 
 $total = (int)$db->fetchValue("SELECT COUNT(*) FROM mosques m WHERE $whereSql", $params);
 $pages = max(1, (int)ceil($total / $perPage));
 
+$orderMap = [
+    'rating' => 'm.rating_average DESC, m.review_count DESC',
+    'reviews' => 'm.review_count DESC',
+    'name' => 'm.name ASC',
+];
+if ($dist['has']) {
+    $orderMap['distance'] = 'distance_km ASC';
+}
+$orderBy = $orderMap[$sort] ?? $orderMap['rating'];
+
 $items = $db->fetchAll(
     "SELECT m.id, m.name, m.slug, m.city, m.address, m.phone, m.is_verified,
-            m.rating_average, m.review_count, m.latitude, m.longitude,
+            m.rating_average, m.review_count, m.latitude, m.longitude${dist['select'] ? ',' . $dist['select'] : ''},
             (SELECT photo_path FROM mosque_photos WHERE mosque_id = m.id
               ORDER BY is_primary DESC, id DESC LIMIT 1) AS primary_photo
        FROM mosques m
       WHERE $whereSql
-      ORDER BY m.rating_average DESC, m.review_count DESC
+      ORDER BY $orderBy
       LIMIT $perPage OFFSET $offset",
     $params
 );

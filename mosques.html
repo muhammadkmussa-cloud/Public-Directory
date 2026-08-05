@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mosques — Umma Directory</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Umma Directory">
+  <meta property="og:title" content="Mosques — Umma Directory">
+  <meta property="og:description" content="Find halal businesses, mosques with prayer times, and trusted fundis near you.">
+  <meta property="og:url" content="https://yourdomain.com/mosques.html">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="description" content="Find mosques with prayer times, facilities and community reviews.">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#d32323">
@@ -13,6 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
 </head>
 <body>
@@ -38,13 +45,27 @@
           <button class="btn btn-primary btn-block" type="submit">Search</button>
           <a class="btn btn-ghost btn-block" href="mosques.html" style="margin-top:.4rem;">Clear</a>
         </div>
+        <input type="hidden" name="lat" id="f-lat">
+        <input type="hidden" name="lng" id="f-lng">
+        <input type="hidden" name="radius" id="f-radius" value="50">
+        <input type="hidden" name="sort" id="f-sort" value="rating">
       </form>
+
+      <div class="result-bar">
+        <button class="btn btn-outline btn-sm" id="nearMeBtn" type="button" title="Use your location to find nearby results">📍 Near me</button>
+        <span id="resultBarSpacer"></span>
+        <div class="view-toggle" id="viewToggle">
+          <button class="view-btn active" data-view="list">List</button>
+          <button class="view-btn" data-view="map">Map</button>
+        </div>
+      </div>
 
       <div class="grid" id="mosqueResults">
         <div class="card listing-card skeleton"><div class="skeleton-media"></div><div class="card-body"><div class="sk-line w60"></div><div class="sk-line w40"></div><div class="sk-line w80"></div></div></div>
         <div class="card listing-card skeleton"><div class="skeleton-media"></div><div class="card-body"><div class="sk-line w60"></div><div class="sk-line w40"></div><div class="sk-line w80"></div></div></div>
         <div class="card listing-card skeleton"><div class="skeleton-media"></div><div class="card-body"><div class="sk-line w60"></div><div class="sk-line w40"></div><div class="sk-line w80"></div></div></div>
       </div>
+      <div id="mapContainer" class="map-box" hidden></div>
       <div id="pagination"></div>
     </div>
   </main>
@@ -52,7 +73,10 @@
   <div id="site-footer"></div>
 
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/share.js"></script>
   <script src="assets/js/mock.js"></script>
+  <script src="assets/js/map.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="assets/js/pages/mosques.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

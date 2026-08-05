@@ -28,6 +28,11 @@ window.appReady.then(async () => {
 
   try {
     const { business, photos, reviews, rating_breakdown, similar } = await api('api/businesses.php?id=' + id);
+    if (window.setOgMeta) setOgMeta({
+      title: business.name,
+      description: (business.short_description || business.description || '') + ' — ' + business.city,
+      image: photos && photos[0] ? photos[0].photo_path : '',
+    });
     renderBusiness(business, photos, reviews, rating_breakdown);
     renderSimilar(similar);
     loadSponsoredSide();
@@ -138,6 +143,7 @@ window.appReady.then(async () => {
           ${b.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
           <button class="btn btn-ghost save-btn" data-save-type="business" data-save-id="${b.id}">${icon('bookmark', 14)} Save</button>
           <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(b.name)}" data-share-url="business.html?id=${b.id}" data-share-text="${esc(b.short_description || b.name)}">${icon('share', 14)} Share</button>
           <button class="btn btn-ghost report-btn" data-report-type="business" data-report-id="${b.id}">${icon('flag', 14)} Report</button>
         </div>
       </div>

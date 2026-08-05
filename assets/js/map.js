@@ -54,5 +54,89 @@ function renderResultsMap(containerId, items) {
   } else {
     map.setView([has[0].latitude, has[0].longitude], 14);
   }
-  return true;
+  return map;
+}
+
+/** Blue-dot marker for the user's location (Near me). Returns marker or null. */
+function addUserMarker(map, lat, lng) {
+  if (!mapAvailable() || !map || !lat || !lng) return null;
+  const icon = L.divIcon({
+    className: 'user-dot-wrap',
+    html: '<span class="user-dot"></span>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+  return L.marker([lat, lng], { icon, zIndexOffset: 1000 })
+    .addTo(map)
+    .bindPopup('<b>You are here</b>');
+}
+
+/**
+ * Promise wrapper around the browser Geolocation API.
+ * Rejects with a friendly message; caller decides how to degrade.
+ */
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) {
+      reject(new Error('Geolocation is not supported by this browser'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy || 0 }),
+      err => {
+        const msg = err && err.code === 1
+          ? 'Location access was denied'
+          : 'Could not get your location';
+        reject(new Error(msg));
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
+
+/**
+ * Shared List/Map toggle wiring for listing pages (businesses, mosques, fundis).
+ * opts:
+ *   toggleId     — id of the .view-toggle element (buttons data-view="list|map")
+ *   containerId  — id of the map container div (hidden by default)
+ *   resultsEl    — element with the result cards
+ *   pagEl        — element with pagination
+ *   getItems     — () => raw items with latitude/longitude (+ type + url fields)
+ *   onMapShown   — optional callback after the map renders (e.g. center on user)
+ */
+function wireResultsMapToggle(opts) {
+  const toggle = document.getElementById(opts.toggleId);
+  const container = document.getElementById(opts.containerId);
+  if (!toggle || !container) return;
+  let mapShown = false;
+
+  function showMap() {
+    mapShown = true;
+    if (opts.resultsEl) opts.resultsEl.hidden = true;
+    if (opts.pagEl) opts.pagEl.hidden = true;
+    container.hidden = false;
+    const items = opts.getItems() || [];
+    const ok = renderResultsMap(opts.containerId, items);
+    if (!ok && container) {
+      container.innerHTML = '<div class="empty-state"><p>No locations available to map.</p></div>';
+    } else if (ok && opts.onMapShown) {
+      opts.onMapShown(ok); // ok = Leaflet map instance
+    }
+  }
+
+  function showList() {
+    mapShown = false;
+    if (opts.resultsEl) opts.resultsEl.hidden = false;
+    if (opts.pagEl) opts.pagEl.hidden = false;
+    container.hidden = true;
+  }
+
+  toggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.view-btn');
+    if (!btn) return;
+    toggle.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b === btn));
+    if (btn.dataset.view === 'map') showMap(); else showList();
+  });
+
+  return { showMap, showList, isMapShown: () => mapShown };
 }
