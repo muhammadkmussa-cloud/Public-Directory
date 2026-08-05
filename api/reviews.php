@@ -1,168 +1,249 @@
 <?php
 /**
- * Review API Handler
- * Handles submission, editing, and deletion of reviews
+ * Reviews API
+ *   GET  api/reviews.php?action=mine   → the logged-in user's reviews
+ *   POST api/reviews.php  {action: 'create', reviewable_id, reviewable_type, rating, title, content}
+ *   POST api/reviews.php  {action: 'helpful', review_id}
+ *   POST api/reviews.php  {action: 'delete', review_id}      (author or admin)
+ * Create/helpful/delete require login + CSRF.
  */
+require __DIR__ . '/_bootstrap.php';
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/Database.php';
-require_once __DIR__ . '/../includes/Auth.php';
-require_once __DIR__ . '/../includes/helpers.php';
-
-header('Content-Type: application/json');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit;
-}
-
-$action = $_POST['action'] ?? '';
 $db = Database::getInstance();
-$auth = new Auth();
 
-// Ensure user is logged in
-$user = $auth->getCurrentUser();
-if (!$user) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please login to write a review']);
-    exit;
+/* ================= my reviews ================= */
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'mine') {
+    $user = require_login();
+    $rows = $db->fetchAll(
+        'SELECT r.id, r.reviewable_id, r.reviewable_type, r.rating, r.title, r.content,
+                r.helpful_count, r.created_at
+           FROM reviews r
+          WHERE r.user_id = ?
+          ORDER BY r.created_at DESC
+          LIMIT 50',
+        [$user['id']]
+    );
+    // resolve listing names
+    $names = [];
+    foreach ($rows as &$row) {
+        $key = $row['reviewable_type'] . ':' . $row['reviewable_id'];
+        if (!isset($names[$key])) {
+            $table = $row['reviewable_type'] === 'business' ? 'businesses' : ($row['reviewable_type'] === 'mosque' ? 'mosques' : 'fundis');
+            if ($row['reviewable_type'] === 'fundi') {
+                $name = $db->fetchValue(
+                    "SELECT u.full_name FROM fundis f JOIN users u ON u.id = f.user_id WHERE f.id = ?",
+                    [$row['reviewable_id']]
+                );
+            } else {
+                $name = $db->fetchValue("SELECT name FROM $table WHERE id = ?", [$row['reviewable_id']]);
+            }
+            $names[$key] = $name ?: 'Deleted listing';
+        }
+        $row['listing_name'] = $names[$key];
+        $row['listing_url'] = $row['reviewable_type'] . '.html?id=' . $row['reviewable_id'];
+    }
+    json_ok($rows);
 }
 
-try {
-    if ($action === 'submit') {
-        $listingId = filter_input(INPUT_POST, 'listing_id', FILTER_VALIDATE_INT);
-        $type = $_POST['type'] ?? 'business'; // business, mosque, fundi
-        $rating = filter_input(INPUT_POST, 'rating', FILTER_VALIDATE_INT);
-        $title = trim($_POST['title'] ?? '');
-        $text = trim($_POST['text'] ?? '');
-        
-        // Specific ratings
-        $serviceRating = filter_input(INPUT_POST, 'service_rating', FILTER_VALIDATE_INT);
-        $valueRating = filter_input(INPUT_POST, 'value_rating', FILTER_VALIDATE_INT);
-        $atmosphereRating = filter_input(INPUT_POST, 'atmosphere_rating', FILTER_VALIDATE_INT);
+require_method('POST');
+$user = require_login();
+require_csrf();
 
-        if (!$listingId || !$rating || $rating < 1 || $rating > 5) {
-            throw new Exception('Invalid rating data');
-        }
+$db = Database::getInstance();
+$body = json_body();
+$action = $body['action'] ?? '';
 
-        $db->beginTransaction();
+/* ================= create ================= */
+if ($action === 'create') {
+    rate_limit('review_create', 10, 3600);   // 10 reviews / hour per IP
+    $reviewableId   = (int)($body['reviewable_id'] ?? 0);
+    $reviewableType = $body['reviewable_type'] ?? '';
+    $rating         = (int)($body['rating'] ?? 0);
+    $title          = trim($body['title'] ?? '');
+    $content        = trim($body['content'] ?? '');
 
-        // Insert Review
-        $sql = "INSERT INTO reviews (user_id, listing_id, listing_type, rating, title, text, 
-                service_rating, value_rating, atmosphere_rating, status, created_at) 
-                VALUES (:user_id, :listing_id, :type, :rating, :title, :text, 
-                :srv, :val, :atm, 'active', NOW())";
-        
-        $stmt = $db->query($sql, [
-            ':user_id' => $user['id'],
-            ':listing_id' => $listingId,
-            ':type' => $type,
-            ':rating' => $rating,
-            ':title' => $title,
-            ':text' => $text,
-            ':srv' => $serviceRating ?: null,
-            ':val' => $valueRating ?: null,
-            ':atm' => $atmosphereRating ?: null
-        ]);
-
-        $reviewId = $db->lastInsertId();
-
-        // Handle Photo Uploads
-        if (!empty($_FILES['photos']['name'][0])) {
-            $uploadDir = __DIR__ . '/../uploads/reviews/' . $reviewId;
-            if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $count = count($_FILES['photos']['name']);
-            for ($i = 0; $i < $count; $i++) {
-                if ($_FILES['photos']['error'][$i] === 0) {
-                    $tmpName = $_FILES['photos']['tmp_name'][$i];
-                    $fileName = basename($_FILES['photos']['name'][$i]);
-                    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-                    
-                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                        $newName = uniqid() . '.' . $ext;
-                        $destPath = $uploadDir . '/' . $newName;
-                        
-                        if (move_uploaded_file($tmpName, $destPath)) {
-                            // Resize image could be added here using GD/ImageMagick
-                            $db->query("INSERT INTO review_photos (review_id, photo_path, created_at) 
-                                       VALUES (:rid, :path, NOW())", [
-                                ':rid' => $reviewId,
-                                ':path' => 'reviews/' . $reviewId . '/' . $newName
-                            ]);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Update Average Rating for Listing
-        updateListingRating($db, $listingId, $type);
-
-        $db->commit();
-        echo json_encode(['success' => true, 'message' => 'Review submitted successfully!', 'redirect' => '/listing/' . $type . '/' . $listingId]);
-
-    } elseif ($action === 'helpful') {
-        $reviewId = filter_input(INPUT_POST, 'review_id', FILTER_VALIDATE_INT);
-        if (!$reviewId) throw new Exception('Invalid review');
-
-        // Check if user already voted
-        $check = $db->queryOne("SELECT id FROM review_votes WHERE review_id = :rid AND user_id = :uid", [
-            ':rid' => $reviewId, ':uid' => $user['id']
-        ]);
-
-        if ($check) {
-            echo json_encode(['success' => false, 'message' => 'You already voted on this review']);
-        } else {
-            $db->query("INSERT INTO review_votes (review_id, user_id, created_at) VALUES (:rid, :uid, NOW())", [
-                ':rid' => $reviewId, ':uid' => $user['id']
-            ]);
-            $db->query("UPDATE reviews SET helpful_count = helpful_count + 1 WHERE id = :rid", [':rid' => $reviewId]);
-            echo json_encode(['success' => true, 'message' => 'Thanks for your feedback']);
-        }
-
-    } elseif ($action === 'delete') {
-        $reviewId = filter_input(INPUT_POST, 'review_id', FILTER_VALIDATE_INT);
-        if (!$reviewId) throw new Exception('Invalid review');
-
-        // Verify ownership
-        $review = $db->queryOne("SELECT * FROM reviews WHERE id = :rid AND user_id = :uid", [
-            ':rid' => $reviewId, ':uid' => $user['id']
-        ]);
-
-        if ($review || $user['role'] === 'admin') {
-            $db->query("DELETE FROM reviews WHERE id = :rid", [':rid' => $reviewId]);
-            // Recalculate rating
-            // (Simplified for brevity)
-            echo json_encode(['success' => true, 'message' => 'Review deleted']);
-        } else {
-            throw new Exception('Unauthorized');
-        }
-    } else {
-        throw new Exception('Invalid action');
+    if (!in_array($reviewableType, ['business', 'mosque', 'fundi'], true)) {
+        json_err('Invalid review target', 422);
+    }
+    if ($reviewableId < 1) {
+        json_err('Missing review target', 422);
+    }
+    if ($rating < 1 || $rating > 5) {
+        json_err('Rating must be between 1 and 5', 422);
+    }
+    if ($title === '' || mb_strlen($title) > 200) {
+        json_err('Please add a short title (max 200 chars)', 422);
+    }
+    if ($content === '' || mb_strlen($content) > 2000) {
+        json_err('Review text is required (max 2000 chars)', 422);
     }
 
-} catch (Exception $e) {
-    if (isset($db)) $db->rollBack();
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    // target must exist
+    $table = $reviewableType === 'business' ? 'businesses' : ($reviewableType === 'mosque' ? 'mosques' : 'fundis');
+    if (!$db->fetchOne("SELECT id FROM $table WHERE id = ?", [$reviewableId])) {
+        json_err('That listing does not exist', 404);
+    }
+
+    // one review per user per listing
+    $existing = $db->fetchOne(
+        'SELECT id FROM reviews WHERE user_id = ? AND reviewable_id = ? AND reviewable_type = ?',
+        [$user['id'], $reviewableId, $reviewableType]
+    );
+    if ($existing) {
+        json_err('You already reviewed this listing', 409);
+    }
+
+    $db->begin();
+    try {
+        $reviewId = $db->insert(
+            'INSERT INTO reviews (user_id, reviewable_id, reviewable_type, rating, title, content, is_approved)
+             VALUES (?, ?, ?, ?, ?, ?, 1)',
+            [$user['id'], $reviewableId, $reviewableType, $rating, $title, $content]
+        );
+
+        // optional photos (paths from api/upload.php, e.g. "uploads/reviews/abc.jpg")
+        $photoPaths = $body['photo_paths'] ?? [];
+        if (is_array($photoPaths)) {
+            $baseReal = realpath(UPLOAD_PATH) ?: UPLOAD_PATH;
+            foreach (array_slice($photoPaths, 0, 5) as $path) {
+                if (!is_string($path) || $path === '') continue;
+                $full = realpath(UPLOAD_PATH . str_replace('uploads/', '', $path));
+                if ($full && strpos($full, $baseReal) === 0 && is_file($full)) {
+                    $db->insert(
+                        'INSERT INTO review_photos (review_id, photo_path) VALUES (?, ?)',
+                        [$reviewId, $path]
+                    );
+                }
+            }
+            $photoCount = (int)$db->fetchValue('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', [$reviewId]);
+            $db->execute('UPDATE reviews SET photos_count = ? WHERE id = ?', [$photoCount, $reviewId]);
+            $db->execute('UPDATE users SET total_photos = total_photos + ? WHERE id = ?', [$photoCount, $user['id']]);
+        }
+
+        // refresh cached aggregates on the listing
+        $agg = $db->fetchOne(
+            'SELECT AVG(rating) AS avg, COUNT(*) AS cnt FROM reviews
+              WHERE reviewable_id = ? AND reviewable_type = ? AND is_approved = 1 AND is_hidden = 0',
+            [$reviewableId, $reviewableType]
+        );
+        $avg = round((float)$agg['avg'], 2);
+        $cnt = (int)$agg['cnt'];
+        $db->execute(
+            "UPDATE $table SET rating_average = ?, rating_count = ?, review_count = ? WHERE id = ?",
+            [$avg, $cnt, $cnt, $reviewableId]
+        );
+
+        // contributor counters
+        $db->execute('UPDATE users SET total_reviews = total_reviews + 1 WHERE id = ?', [$user['id']]);
+
+        // notify the listing owner
+        if ($reviewableType === 'business') {
+            $ownerId = $db->fetchValue('SELECT user_id FROM businesses WHERE id = ?', [$reviewableId]);
+            $bizName = $db->fetchValue('SELECT name FROM businesses WHERE id = ?', [$reviewableId]);
+            if ($ownerId && (int)$ownerId !== (int)$user['id']) {
+                notify($db, $ownerId, 'new_review',
+                    'New ' . str_repeat('★', $rating) . ' review',
+                    $user['full_name'] . ' reviewed ' . $bizName . ': "' . mb_substr($content, 0, 80) . '"',
+                    'business.html?id=' . $reviewableId);
+            }
+        }
+
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollback();
+        error_log('Review create failed: ' . $e->getMessage());
+        json_err('Could not save your review', 500);
+    }
+
+    json_ok(['review_id' => $reviewId], 201);
 }
 
-function updateListingRating($db, $listingId, $type) {
-    $table = $type === 'business' ? 'businesses' : ($type === 'mosque' ? 'mosques' : 'fundis');
-    
-    $result = $db->queryOne("SELECT AVG(rating) as avg, COUNT(*) as count FROM reviews 
-                            WHERE listing_id = :lid AND listing_type = :type AND status = 'active'", [
-        ':lid' => $listingId, ':type' => $type
-    ]);
+/* ================= react (useful / funny / cool) ================= */
+if ($action === 'react' || $action === 'helpful') {
+    rate_limit('review_react', 60, 300);     // vote spam
+    $reviewId = (int)($body['review_id'] ?? 0);
+    $reaction = $action === 'helpful' ? 'useful' : ($body['reaction'] ?? 'useful');
+    if (!in_array($reaction, ['useful', 'funny', 'cool'], true)) {
+        json_err('Invalid reaction', 422);
+    }
+    $review = $db->fetchOne('SELECT id FROM reviews WHERE id = ?', [$reviewId]);
+    if (!$review) {
+        json_err('Review not found', 404);
+    }
 
-    $avg = round($result['avg'], 1);
-    $count = (int)$result['count'];
+    // toggle: vote if absent, remove if present
+    $db->begin();
+    try {
+        $existing = $db->fetchOne(
+            'SELECT id FROM review_helpful WHERE review_id = ? AND user_id = ? AND reaction_type = ?',
+            [$reviewId, $user['id'], $reaction]
+        );
+        if ($existing) {
+            $db->execute(
+                'DELETE FROM review_helpful WHERE review_id = ? AND user_id = ? AND reaction_type = ?',
+                [$reviewId, $user['id'], $reaction]
+            );
+        } else {
+            $db->insert(
+                'INSERT INTO review_helpful (review_id, user_id, reaction_type, is_helpful) VALUES (?, ?, ?, 1)',
+                [$reviewId, $user['id'], $reaction]
+            );
+            $db->execute('UPDATE users SET helpful_votes = helpful_votes + 1 WHERE id = ?', [$user['id']]);
+        }
+        // keep legacy helpful_count column = number of "useful" reactions
+        $useful = (int)$db->fetchValue(
+            "SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'useful'",
+            [$reviewId]
+        );
+        $db->execute('UPDATE reviews SET helpful_count = ? WHERE id = ?', [$useful, $reviewId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollback();
+        error_log('Review react failed: ' . $e->getMessage());
+        json_err('Could not save your reaction', 500);
+    }
 
-    $db->query("UPDATE $table SET rating = :avg, review_count = :count WHERE id = :lid", [
-        ':avg' => $avg, ':count' => $count, ':lid' => $listingId
+    $counts = [
+        'useful' => (int)$db->fetchValue("SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'useful'", [$reviewId]),
+        'funny'  => (int)$db->fetchValue("SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'funny'", [$reviewId]),
+        'cool'   => (int)$db->fetchValue("SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'cool'", [$reviewId]),
+    ];
+    $mine = $db->fetchAll(
+        'SELECT reaction_type FROM review_helpful WHERE review_id = ? AND user_id = ?',
+        [$reviewId, $user['id']]
+    );
+    json_ok([
+        'counts' => $counts,
+        'user_reactions' => array_column($mine, 'reaction_type'),
     ]);
 }
+
+/* ================= delete ================= */
+if ($action === 'delete') {
+    $reviewId = (int)($body['review_id'] ?? 0);
+    $review = $db->fetchOne('SELECT * FROM reviews WHERE id = ?', [$reviewId]);
+    if (!$review) {
+        json_err('Review not found', 404);
+    }
+    if ($review['user_id'] !== $user['id'] && $user['user_type'] !== 'admin') {
+        json_err('You can only delete your own reviews', 403);
+    }
+
+    $db->execute('DELETE FROM reviews WHERE id = ?', [$reviewId]);
+
+    // recalc aggregates
+    $table = $review['reviewable_type'] === 'business' ? 'businesses' : ($review['reviewable_type'] === 'mosque' ? 'mosques' : 'fundis');
+    $agg = $db->fetchOne(
+        'SELECT AVG(rating) AS avg, COUNT(*) AS cnt FROM reviews
+          WHERE reviewable_id = ? AND reviewable_type = ? AND is_approved = 1 AND is_hidden = 0',
+        [$review['reviewable_id'], $review['reviewable_type']]
+    );
+    $db->execute(
+        "UPDATE $table SET rating_average = ?, rating_count = ?, review_count = ? WHERE id = ?",
+        [round((float)$agg['avg'], 2), (int)$agg['cnt'], (int)$agg['cnt'], $review['reviewable_id']]
+    );
+
+    json_ok(['deleted' => true]);
+}
+
+json_err('Unknown action', 404);

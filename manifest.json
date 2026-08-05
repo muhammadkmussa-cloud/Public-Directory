@@ -1,0 +1,12 @@
+{
+  "name": "Umma Directory",
+  "short_name": "Umma!",
+  "description": "Find halal businesses, mosques with prayer times, trusted fundis and causes — reviewed by the community.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d32323",
+  "icons": [
+    { "src": "assets/img/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fundi — Umma Directory</title>
+  <meta name="description" content="Skilled worker profile, portfolio and reviews.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#d32323">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/img/favicon.svg">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <div class="container">
+      <a class="back-link" href="fundis.html">← Back to fundis</a>
+      <div id="fundiDetail"><!-- filled by fundi.js --></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <!-- Quote request modal (delivered via WhatsApp) -->
+  <div class="modal-overlay" id="quoteModal" role="dialog" aria-modal="true" aria-labelledby="quoteModalTitle">
+    <div class="modal">
+      <button class="modal-close" data-close-quote aria-label="Close">×</button>
+      <h2 id="quoteModalTitle">Request a quote</h2>
+      <div id="quoteAlert"></div>
+      <form id="quoteForm">
+        <input type="hidden" id="qtFundiId" name="fundi_id">
+        <div class="form-group">
+          <label for="qtName">Your name</label>
+          <input type="text" id="qtName" name="name" required maxlength="100" placeholder="Amina Hassan">
+        </div>
+        <div class="form-group">
+          <label for="qtPhone">Your phone</label>
+          <input type="tel" id="qtPhone" name="phone" required placeholder="07XX XXX XXX">
+        </div>
+        <div class="form-group">
+          <label for="qtDesc">What do you need done?</label>
+          <textarea id="qtDesc" name="description" rows="4" required maxlength="2000" placeholder="Describe the job…" style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--border-2);border-radius:6px;font:inherit;outline:none;"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="quoteBtn">Request quote</button>
+      </form>
+      <div id="quoteSuccess" hidden style="margin-top:1rem;text-align:center;">
+        <p class="muted small" style="margin-bottom:.8rem;">Tap below to send your request to <b id="quoteFundiName"></b> on WhatsApp:</p>
+        <a class="btn btn-primary btn-block" id="quoteWaLink" href="#" target="_blank" rel="noopener">
+          <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.7-.3-3.9-.9L3 21l1.9-5.1A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 9.5c.3 2 1.5 3.2 3.5 3.5l1-1 1.5 1v1.5c0 .6-.5 1-1.1 1A7 7 0 0 1 8 10.1c0-.6.4-1.1 1-1.1h1.5l1 1z"/></svg>
+          Send via WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Write review modal -->
+  <div class="modal-overlay" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+    <div class="modal">
+      <button class="modal-close" data-close-modal aria-label="Close">×</button>
+      <h2 id="reviewModalTitle">Write a review</h2>
+      <form id="reviewForm">
+        <input type="hidden" name="reviewable_type" id="rvType" value="fundi">
+        <input type="hidden" name="reviewable_id" id="rvId" value="">
+        <div class="form-group">
+          <label>Your rating</label>
+          <div class="star-input">
+            <input type="radio" name="rating" value="5" id="st5" required><label for="st5">★</label>
+            <input type="radio" name="rating" value="4" id="st4"><label for="st4">★</label>
+            <input type="radio" name="rating" value="3" id="st3"><label for="st3">★</label>
+            <input type="radio" name="rating" value="2" id="st2"><label for="st2">★</label>
+            <input type="radio" name="rating" value="1" id="st1"><label for="st1">★</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rvTitle">Title</label>
+          <input type="text" id="rvTitle" name="title" maxlength="200" placeholder="Summarise your experience" required>
+        </div>
+        <div class="form-group">
+          <label for="rvContent">Your review</label>
+          <textarea id="rvContent" name="content" rows="5" maxlength="2000" placeholder="How was the workmanship?" required style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--border);border-radius:10px;font:inherit;outline:none;"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="rvPhotos">Add photos (optional, up to 5)</label>
+          <input type="file" id="rvPhotos" accept="image/*" multiple style="width:100%;padding:.5rem;border:1.5px solid var(--border);border-radius:10px;font:inherit;">
+          <div class="photo-preview" id="rvPhotoPreview"></div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="reviewSubmit">Submit review</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/map.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="assets/js/pages/fundi.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

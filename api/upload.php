@@ -1,176 +1,124 @@
 <?php
 /**
- * Image Upload Handler - SECURE VERSION
- * Handles secure image uploads with MIME validation, re-encoding, and thumbnail generation
+ * Umma Directory — Image Upload API (secure)
+ *
+ *   POST api/upload.php  (multipart/form-data)
+ *     image : file            required
+ *     dir   : target folder   optional (sanitized to [a-z0-9_-])
+ *
+ * Requires login + CSRF. Returns { file, thumbnail, mime, size } with paths
+ * relative to the site root (e.g. "uploads/reviews/abc123.jpg").
+ *
+ * Hardening: MIME sniffed with finfo, image re-encoded with GD (strips EXIF
+ * and embedded payloads), random filenames, thumbnail generated, PHP execution
+ * blocked in uploads/ via .htaccess.
  */
+require __DIR__ . '/_bootstrap.php';
 
-require_once __DIR__ . '/../includes/Database.php';
-require_once __DIR__ . '/../includes/Auth.php';
+require_method('POST');
+rate_limit('upload', 20, 3600);
+require_login();
+require_csrf();
 
-header('Content-Type: application/json');
+$db = null; // not needed, but keep consistent with bootstrap
 
-// Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
-    exit;
-}
+$allowedTypes = ALLOWED_IMAGE_TYPES;
+$maxSize = MAX_FILE_SIZE;
+$uploadDir = UPLOAD_PATH;
 
-// Check authentication
-Auth::requireLogin();
-
-// Verify CSRF token
-if (!Auth::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
-    exit;
-}
-
-$db = Database::getInstance();
-
-// Configuration
-$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-$maxSize = 5 * 1024 * 1024; // 5MB
-$uploadDir = __DIR__ . '/../uploads/';
-
-// Get target subdirectory (sanitize input)
+// Target subdirectory (sanitized)
 $targetSubDir = isset($_POST['dir']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['dir']) : 'general';
+if ($targetSubDir === '') {
+    $targetSubDir = 'general';
+}
 $fullUploadDir = $uploadDir . $targetSubDir . '/';
 
-// Ensure directory exists and is writable
 if (!is_dir($fullUploadDir)) {
-    if (!mkdir($fullUploadDir, 0755, true)) {
-        echo json_encode(['success' => false, 'error' => 'Failed to create upload directory']);
-        exit;
+    if (!mkdir($fullUploadDir, 0755, true) && !is_dir($fullUploadDir)) {
+        json_err('Could not create upload directory', 500);
     }
 }
 
-// Check if file exists in request
 if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-    $errorCodes = [
-        UPLOAD_ERR_INI_SIZE => 'File exceeds server limit',
-        UPLOAD_ERR_FORM_SIZE => 'File exceeds form limit',
-        UPLOAD_ERR_PARTIAL => 'File only partially uploaded',
-        UPLOAD_ERR_NO_FILE => 'No file uploaded',
-        UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
-        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
-        UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
-    ];
-    $code = isset($_FILES['image']) ? $_FILES['image']['error'] : UPLOAD_ERR_NO_FILE;
-    echo json_encode(['success' => false, 'error' => $errorCodes[$code] ?? 'Unknown upload error']);
-    exit;
+    json_err('No file uploaded', 422);
 }
 
 $file = $_FILES['image'];
 
-// FIX 1: Validate File Size First
 if ($file['size'] > $maxSize) {
-    echo json_encode(['success' => false, 'error' => 'File size exceeds 5MB limit']);
-    exit;
+    json_err('File exceeds the ' . round($maxSize / 1048576) . 'MB limit', 413);
 }
 
-// FIX 2: Validate MIME Type using finfo (not client-provided type)
+// MIME check via finfo (not client-provided)
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mimeType = $finfo->file($file['tmp_name']);
-
-if (!in_array($mimeType, $allowedTypes)) {
-    echo json_encode(['success' => false, 'error' => 'Invalid file type. Only JPG, PNG, GIF, WEBP allowed.']);
-    exit;
+if (!in_array($mimeType, $allowedTypes, true)) {
+    json_err('Invalid file type. Only JPG, PNG, GIF, WEBP allowed.', 415);
 }
 
-// FIX 3: Validate Image Integrity by attempting to load it
+// Load image (validates it's a real image)
 $sourceImage = null;
 switch ($mimeType) {
-    case 'image/jpeg': $sourceImage = imagecreatefromjpeg($file['tmp_name']); break;
-    case 'image/png': $sourceImage = imagecreatefrompng($file['tmp_name']); break;
-    case 'image/gif': $sourceImage = imagecreatefromgif($file['tmp_name']); break;
-    case 'image/webp': $sourceImage = imagecreatefromwebp($file['tmp_name']); break;
+    case 'image/jpeg': $sourceImage = @imagecreatefromjpeg($file['tmp_name']); break;
+    case 'image/png':  $sourceImage = @imagecreatefrompng($file['tmp_name']);  break;
+    case 'image/gif':  $sourceImage = @imagecreatefromgif($file['tmp_name']);  break;
+    case 'image/webp': $sourceImage = @imagecreatefromwebp($file['tmp_name']); break;
 }
-
 if (!$sourceImage) {
-    echo json_encode(['success' => false, 'error' => 'Corrupted image file']);
-    exit;
+    json_err('Corrupted or unsupported image', 422);
 }
 
-// FIX 4: Generate Secure Filename (random hex, no user input)
-$extensionMap = [
-    'image/jpeg' => '.jpg',
-    'image/png' => '.png',
-    'image/gif' => '.gif',
-    'image/webp' => '.webp'
-];
-$extension = $extensionMap[$mimeType];
-$filename = bin2hex(random_bytes(16)) . '_' . time() . $extension;
+// Random secure filename
+$extMap = ['image/jpeg' => '.jpg', 'image/png' => '.png', 'image/gif' => '.gif', 'image/webp' => '.webp'];
+$filename = bin2hex(random_bytes(16)) . '_' . time() . $extMap[$mimeType];
 $destinationPath = $fullUploadDir . $filename;
 $thumbnailPath = $fullUploadDir . 'thumb_' . $filename;
 
-// FIX 5: Re-encode Image (Strips Metadata, EXIF, Malicious Scripts)
+// Re-encode (strips metadata / embedded payloads)
+$origW = imagesx($sourceImage);
+$origH = imagesy($sourceImage);
 $quality = 85;
-$origWidth = imagesx($sourceImage);
-$origHeight = imagesy($sourceImage);
 
-// Save Original (Re-encoded cleanly)
-if ($mimeType == 'image/jpeg') {
-    imagejpeg($sourceImage, $destinationPath, $quality);
-} elseif ($mimeType == 'image/png') {
-    imagepng($sourceImage, $destinationPath, 6);
-} elseif ($mimeType == 'image/gif') {
-    imagegif($sourceImage, $destinationPath);
-} elseif ($mimeType == 'image/webp') {
-    imagewebp($sourceImage, $destinationPath, $quality);
+switch ($mimeType) {
+    case 'image/jpeg': imagejpeg($sourceImage, $destinationPath, $quality); break;
+    case 'image/png':  imagepng($sourceImage, $destinationPath, 6);         break;
+    case 'image/gif':  imagegif($sourceImage, $destinationPath);            break;
+    case 'image/webp': imagewebp($sourceImage, $destinationPath, $quality); break;
 }
 
-// FIX 6: Generate Thumbnail (Max 300x300)
-$thumbWidth = 300;
-$thumbHeight = 300;
-$ratio = min($thumbWidth / $origWidth, $thumbHeight / $origHeight);
-$newWidth = (int)($origWidth * $ratio);
-$newHeight = (int)($origHeight * $ratio);
+// Thumbnail (max 300x300)
+$tw = 300; $th = 300;
+$ratio = min($tw / $origW, $th / $origH);
+$nw = max(1, (int)($origW * $ratio));
+$nh = max(1, (int)($origH * $ratio));
+$thumb = imagecreatetruecolor($nw, $nh);
+if (in_array($mimeType, ['image/png', 'image/gif', 'image/webp'], true)) {
+    imagealphablending($thumb, false);
+    imagesavealpha($thumb, true);
+    $trans = imagecolorallocatealpha($thumb, 255, 255, 255, 127);
+    imagefilledrectangle($thumb, 0, 0, $nw, $nh, $trans);
+}
+imagecopyresampled($thumb, $sourceImage, 0, 0, 0, 0, $nw, $nh, $origW, $origH);
 
-$thumbImage = imagecreatetruecolor($newWidth, $newHeight);
-
-// Preserve transparency for PNG/GIF/WEBP
-if (in_array($mimeType, ['image/png', 'image/gif', 'image/webp'])) {
-    imagealphablending($thumbImage, false);
-    imagesavealpha($thumbImage, true);
-    $transparent = imagecolorallocatealpha($thumbImage, 255, 255, 255, 127);
-    imagefilledrectangle($thumbImage, 0, 0, $newWidth, $newHeight, $transparent);
+switch ($mimeType) {
+    case 'image/jpeg': imagejpeg($thumb, $thumbnailPath, $quality); break;
+    case 'image/png':  imagepng($thumb, $thumbnailPath, 6);         break;
+    case 'image/gif':  imagegif($thumb, $thumbnailPath);            break;
+    case 'image/webp': imagewebp($thumb, $thumbnailPath, $quality); break;
 }
 
-imagecopyresampled($thumbImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
-
-if ($mimeType == 'image/jpeg') {
-    imagejpeg($thumbImage, $thumbnailPath, $quality);
-} elseif ($mimeType == 'image/png') {
-    imagepng($thumbImage, $thumbnailPath, 6);
-} elseif ($mimeType == 'image/gif') {
-    imagegif($thumbImage, $thumbnailPath);
-} elseif ($mimeType == 'image/webp') {
-    imagewebp($thumbImage, $thumbnailPath, $quality);
-}
-
-// Cleanup memory
 imagedestroy($sourceImage);
-imagedestroy($thumbImage);
+imagedestroy($thumb);
 
-// Verify files were created
 if (!file_exists($destinationPath) || !file_exists($thumbnailPath)) {
-    echo json_encode(['success' => false, 'error' => 'Failed to save image files']);
-    exit;
+    json_err('Failed to save image', 500);
 }
-
-// Set correct permissions
 chmod($destinationPath, 0644);
 chmod($thumbnailPath, 0644);
 
-// Return relative paths for database storage
-$relativePath = 'uploads/' . $targetSubDir . '/' . $filename;
-$relativeThumb = 'uploads/' . $targetSubDir . '/thumb_' . $filename;
-
-echo json_encode([
-    'success' => true,
-    'file' => $relativePath,
-    'thumbnail' => $relativeThumb,
-    'mime' => $mimeType,
-    'size' => filesize($destinationPath)
-]);
+json_ok([
+    'file'      => 'uploads/' . $targetSubDir . '/' . $filename,
+    'thumbnail' => 'uploads/' . $targetSubDir . '/thumb_' . $filename,
+    'mime'      => $mimeType,
+    'size'      => filesize($destinationPath),
+], 201);

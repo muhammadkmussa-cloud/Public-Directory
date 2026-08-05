@@ -1,0 +1,12 @@
+# Block ANY script execution inside uploads (defense in depth)
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phps|phar|pl|py|cgi|asp|aspx|sh|jsp|htaccess)$">
+    Require all denied
+</FilesMatch>
+
+# No directory listing
+Options -Indexes
+
+# Images only served inline as attachments of their declared type
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

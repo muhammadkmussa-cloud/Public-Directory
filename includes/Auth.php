@@ -1,358 +1,262 @@
 <?php
 /**
- * Umma Directory - Authentication Helper Functions
- * User registration, login, session management
+ * Umma Directory — Authentication (session based)
+ * Static helpers used by the JSON API.
  */
 
 require_once __DIR__ . '/Database.php';
 
-class Auth {
+class Auth
+{
     private static $db;
-    
-    /**
-     * Initialize database connection
-     */
-    private static function init() {
-        if (!self::$db) {
+
+    private static function db()
+    {
+        if (self::$db === null) {
             self::$db = Database::getInstance();
         }
+        return self::$db;
     }
-    
-    /**
-     * Register a new user
-     */
-    public static function register($username, $email, $password, $userType = 'regular', $extraData = []) {
-        self::init();
-        
-        // Validate input
-        if (empty($username) || empty($email) || empty($password)) {
-            return ['success' => false, 'error' => 'All fields are required'];
-        }
-        
-        // Validate email
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'Invalid email address'];
-        }
-        
-        // Validate username
+
+    /* ------------------------------------------------------------------
+     * Registration
+     * ------------------------------------------------------------------ */
+    public static function register($username, $email, $password, $fullName = '', $phone = '')
+    {
+        $username = trim($username);
+        $email    = strtolower(trim($email));
+        $fullName = trim($fullName);
+        $phone    = trim($phone);
+
         if (strlen($username) < 3 || strlen($username) > 50) {
-            return ['success' => false, 'error' => 'Username must be 3-50 characters'];
+            return ['ok' => false, 'error' => 'Username must be 3-50 characters'];
         }
-        
-        // Validate password
-        if (strlen($password) < 6) {
-            return ['success' => false, 'error' => 'Password must be at least 6 characters'];
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Invalid email address'];
         }
-        
-        // Check if username exists
-        $existing = self::$db->fetchOne("SELECT id FROM users WHERE username = ?", [$username]);
-        if ($existing) {
-            return ['success' => false, 'error' => 'Username already taken'];
+        if (strlen($password) < 8) {
+            return ['ok' => false, 'error' => 'Password must be at least 8 characters'];
         }
-        
-        // Check if email exists
-        $existing = self::$db->fetchOne("SELECT id FROM users WHERE email = ?", [$email]);
-        if ($existing) {
-            return ['success' => false, 'error' => 'Email already registered'];
+        if (self::isWeakPassword($password, $username, $email)) {
+            return ['ok' => false, 'error' => 'Password is too weak — use a longer, less common password'];
         }
-        
-        // Hash password
-        $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => HASH_COST]);
-        
-        // Insert user
-        $sql = "INSERT INTO users (username, email, password_hash, user_type, full_name, phone) 
-                VALUES (?, ?, ?, ?, ?, ?)";
-        
-        $userId = self::$db->insert($sql, [
-            $username,
-            $email,
-            $passwordHash,
-            $userType,
-            $extraData['full_name'] ?? null,
-            $extraData['phone'] ?? null
-        ]);
-        
-        if ($userId) {
-            // Create session
-            self::createSession($userId);
-            
-            return ['success' => true, 'user_id' => $userId];
+
+        $db = self::db();
+        if ($db->fetchOne('SELECT id FROM users WHERE email = ?', [$email])) {
+            return ['ok' => false, 'error' => 'That email is already registered'];
         }
-        
-        return ['success' => false, 'error' => 'Registration failed. Please try again.'];
+        if ($db->fetchOne('SELECT id FROM users WHERE username = ?', [$username])) {
+            return ['ok' => false, 'error' => 'That username is already taken'];
+        }
+
+        $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => HASH_COST]);
+
+        $id = $db->insert(
+            'INSERT INTO users (username, email, password_hash, full_name, phone, user_type, is_active)
+             VALUES (?, ?, ?, ?, ?, \'regular\', 1)',
+            [$username, $email, $hash, $fullName ?: null, $phone ?: null]
+        );
+
+        if (!$id) {
+            return ['ok' => false, 'error' => 'Registration failed, please try again'];
+        }
+
+        self::login($username, $password); // auto-login after register
+        return ['ok' => true, 'user' => self::currentUser()];
     }
-    
-    /**
-     * Login user
-     */
-    public static function login($identifier, $password) {
-        self::init();
-        
-        if (empty($identifier) || empty($password)) {
-            return ['success' => false, 'error' => 'Please provide email/username and password'];
+
+    /* ------------------------------------------------------------------
+     * Login / logout
+     * ------------------------------------------------------------------ */
+    public static function login($identifier, $password)
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '' || $password === '') {
+            return ['ok' => false, 'error' => 'Please enter your email/username and password'];
         }
-        
-        // Determine if identifier is email or username
+
+        // per-account lockout: 10 failed attempts → 15 min block
+        $failKey = 'login_fail_' . md5(strtolower($identifier));
+        $failCount = (int)($_SESSION['lockout'][$failKey]['count'] ?? 0);
+        $failUntil = (int)($_SESSION['lockout'][$failKey]['until'] ?? 0);
+        if ($failCount >= 10 && time() < $failUntil) {
+            return ['ok' => false, 'error' => 'Too many failed attempts — try again in a few minutes'];
+        }
+
         $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        
-        // Get user
-        $user = self::$db->fetchOne("SELECT * FROM users WHERE ($field = ? OR phone = ?) AND is_active = 1", [$identifier, $identifier]);
-        
-        if (!$user) {
-            return ['success' => false, 'error' => 'Invalid credentials'];
-        }
-        
-        // Verify password
-        if (!password_verify($password, $user['password_hash'])) {
-            return ['success' => false, 'error' => 'Invalid credentials'];
-        }
-        
-        // Update last login
-        self::$db->update("UPDATE users SET last_login = NOW() WHERE id = ?", [$user['id']]);
-        
-        // Create session
-        self::createSession($user['id']);
-        
-        return ['success' => true, 'user' => $user];
-    }
-    
-    /**
-     * Logout user
-     */
-    public static function logout() {
-        // Destroy session token in database
-        if (isset($_SESSION['user_id'])) {
-            self::init();
-            self::$db->delete("DELETE FROM user_sessions WHERE user_id = ? AND session_token = ?", 
-                [$_SESSION['user_id'], session_id()]);
-        }
-        
-        // Destroy session
-        session_destroy();
-        $_SESSION = [];
-        
-        return true;
-    }
-    
-    /**
-     * Create user session
-     */
-    private static function createSession($userId) {
-        self::init();
-        
-        $sessionToken = session_id();
-        $expiresAt = date('Y-m-d H:i:s', time() + SESSION_LIFETIME);
-        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        
-        // Store session in database
-        self::$db->query(
-            "INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at) 
-             VALUES (?, ?, ?, ?, ?)",
-            [$userId, $sessionToken, $ipAddress, $userAgent, $expiresAt]
+        $user = self::db()->fetchOne(
+            "SELECT * FROM users WHERE ($field = ?) AND is_active = 1",
+            [$identifier]
         );
-        
-        // Set session variables
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['session_token'] = $sessionToken;
+
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            // record the failure for lockout
+            $_SESSION['lockout'][$failKey]['count'] = $failCount + 1;
+            if ($failCount + 1 >= 10) {
+                $_SESSION['lockout'][$failKey]['until'] = time() + 900;
+            }
+            return ['ok' => false, 'error' => 'Invalid credentials'];
+        }
+
+        // success → clear any lockout for this account
+        unset($_SESSION['lockout'][$failKey]);
+
+        session_regenerate_id(true);
+
+        $_SESSION['user_id']  = (int)$user['id'];
         $_SESSION['logged_in'] = true;
+
+        self::db()->execute('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
+
+        return ['ok' => true, 'user' => self::currentUser()];
     }
-    
-    /**
-     * Check if user is logged in
-     */
-    public static function isLoggedIn() {
-        if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
-            return false;
+
+    public static function logout()
+    {
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $p = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
         }
-        
-        self::init();
-        
-        // Verify session in database
-        $session = self::$db->fetchOne(
-            "SELECT * FROM user_sessions 
-             WHERE user_id = ? AND session_token = ? AND expires_at > NOW()",
-            [$_SESSION['user_id'], session_id()]
-        );
-        
-        if (!$session) {
-            // Session expired or invalid
-            self::logout();
-            return false;
-        }
-        
-        return true;
+        session_destroy();
     }
-    
-    /**
-     * Get current user
-     */
-    public static function getCurrentUser() {
+
+    /* ------------------------------------------------------------------
+     * Session state
+     * ------------------------------------------------------------------ */
+    public static function isLoggedIn()
+    {
+        return !empty($_SESSION['logged_in']) && !empty($_SESSION['user_id']);
+    }
+
+    /** Full user row (without password hash) or null */
+    public static function currentUser()
+    {
         if (!self::isLoggedIn()) {
             return null;
         }
-        
-        self::init();
-        return self::$db->fetchOne("SELECT * FROM users WHERE id = ?", [$_SESSION['user_id']]);
-    }
-    
-    /**
-     * Get current user ID
-     */
-    public static function getUserId() {
-        return self::isLoggedIn() ? $_SESSION['user_id'] : null;
-    }
-    
-    /**
-     * Check if user has specific type
-     */
-    public static function isUserType($type) {
-        $user = self::getCurrentUser();
-        return $user && $user['user_type'] === $type;
-    }
-    
-    /**
-     * Check if user is admin
-     */
-    public static function isAdmin() {
-        return self::isUserType('admin');
-    }
-    
-    /**
-     * Require login - redirect if not logged in
-     */
-    public static function requireLogin($redirectUrl = '/pages/auth/login.php') {
-        if (!self::isLoggedIn()) {
-            header("Location: $redirectUrl");
-            exit;
-        }
-    }
-    
-    /**
-     * Require specific user type - redirect if not authorized
-     */
-    public static function requireUserType($type, $redirectUrl = '/pages/unauthorized.php') {
-        self::requireLogin();
-        
-        if (!self::isUserType($type) && !self::isAdmin()) {
-            header("Location: $redirectUrl");
-            exit;
-        }
-    }
-    
-    /**
-     * Require admin - redirect if not admin
-     */
-    public static function requireAdmin($redirectUrl = '/pages/unauthorized.php') {
-        self::requireLogin();
-        
-        if (!self::isAdmin()) {
-            header("Location: $redirectUrl");
-            exit;
-        }
-    }
-    
-    /**
-     * Request password reset
-     */
-    public static function requestPasswordReset($email) {
-        self::init();
-        
-        $user = self::$db->fetchOne("SELECT id FROM users WHERE email = ?", [$email]);
-        
-        if (!$user) {
-            // Don't reveal if email exists
-            return ['success' => true, 'message' => 'If the email exists, a reset link will be sent.'];
-        }
-        
-        // Generate token
-        $token = bin2hex(random_bytes(32));
-        $expiresAt = date('Y-m-d H:i:s', time() + 3600); // 1 hour
-        
-        // Store token
-        self::$db->query(
-            "INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)",
-            [$user['id'], $token, $expiresAt]
+        $user = self::db()->fetchOne(
+            'SELECT id, username, email, full_name, phone, profile_photo, user_type,
+                    is_verified, verification_badge, contributor_level, total_reviews,
+                    total_checkins, total_photos, helpful_votes, created_at, last_login
+             FROM users WHERE id = ?',
+            [$_SESSION['user_id']]
         );
-        
-        // Send email (implement based on your server setup)
-        $resetLink = APP_URL . "/pages/auth/reset_password.php?token=$token";
-        self::sendPasswordResetEmail($email, $resetLink);
-        
-        return ['success' => true, 'message' => 'If the email exists, a reset link will be sent.'];
+        return $user ?: null;
     }
-    
+
+    /** Convenience aliases (match the names used by the old frontend) */
+    public static function check() { return self::isLoggedIn(); }
+    public static function user()   { return self::currentUser(); }
+
+    public static function isAdmin()
+    {
+        $u = self::currentUser();
+        return $u && $u['user_type'] === 'admin';
+    }
+
+    /** Reject common/weak passwords and passwords containing the username/email */
+    private static function isWeakPassword($password, $username = '', $email = '')
+    {
+        $p = strtolower(trim($password));
+        if (strlen($p) < 8) return true;
+        if ($p === strtolower(trim($username))) return true;
+        if ($email && strpos($p, strtolower(trim(explode('@', $email)[0]))) !== false) return true;
+
+        $common = ['password', '12345678', '123456789', 'qwertyui', 'iloveyou', 'admin123',
+                   'letmein', 'welcome1', 'monkey12', 'dragon12', 'abc12345', '11111111',
+                   '12345678a', 'password1', 'changeme', 'default1', 'user1234', 'test1234'];
+        if (in_array($p, $common, true)) return true;
+        // repeated patterns like aaaaaaaa, 12121212
+        if (preg_match('/^(.)\1{5,}$/', $p)) return true;
+        return false;
+    }
+
+    /* ------------------------------------------------------------------
+     * Password reset
+     * ------------------------------------------------------------------ */
     /**
-     * Reset password with token
+     * Create a reset token for an email.
+     * In production the token is emailed; in development/demo mode the token
+     * is returned in the response so the flow can be tested without SMTP.
      */
-    public static function resetPassword($token, $newPassword) {
-        self::init();
-        
-        // Validate token
-        $reset = self::$db->fetchOne(
-            "SELECT * FROM password_resets 
-             WHERE token = ? AND used = 0 AND expires_at > NOW()",
+    public static function requestPasswordReset($email)
+    {
+        $email = strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Invalid email address'];
+        }
+
+        $user = self::db()->fetchOne('SELECT id FROM users WHERE email = ?', [$email]);
+        if (!$user) {
+            // don't reveal whether the email exists
+            return ['ok' => true, 'message' => 'If that email is registered, a reset link has been sent.'];
+        }
+
+        $token = bin2hex(random_bytes(32));
+        self::db()->execute(
+            'INSERT INTO password_resets (user_id, token, expires_at, used)
+             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR), 0)',
+            [$user['id'], $token]
+        );
+
+        $resetLink = (APP_URL ?: '') . '/reset.html?token=' . $token;
+        $subject = 'Reset your password — ' . APP_NAME;
+        $message = "Hello,\n\nWe received a request to reset your password. Click the link below:\n\n$resetLink\n\n"
+                 . "This link expires in 1 hour. If you didn't request this, ignore this email.\n\n— " . APP_NAME . ' Team';
+        @mail($email, $subject, $message, 'From: ' . SMTP_FROM_NAME . ' <' . SMTP_FROM_EMAIL . '>');
+
+        if (APP_ENV === 'development') {
+            return ['ok' => true, 'message' => 'Reset link generated', 'reset_token' => $token, 'reset_link' => $resetLink];
+        }
+        return ['ok' => true, 'message' => 'If that email is registered, a reset link has been sent.'];
+    }
+
+    /** Reset a password with a valid token */
+    public static function resetPassword($token, $newPassword)
+    {
+        if (!is_string($token) || strlen($token) < 32) {
+            return ['ok' => false, 'error' => 'Invalid reset token'];
+        }
+        if (strlen($newPassword) < 8) {
+            return ['ok' => false, 'error' => 'Password must be at least 8 characters'];
+        }
+        if (self::isWeakPassword($newPassword)) {
+            return ['ok' => false, 'error' => 'Password is too weak — use a longer, less common password'];
+        }
+
+        $reset = self::db()->fetchOne(
+            'SELECT * FROM password_resets WHERE token = ? AND used = 0 AND expires_at > NOW()',
             [$token]
         );
-        
         if (!$reset) {
-            return ['success' => false, 'error' => 'Invalid or expired reset token'];
+            return ['ok' => false, 'error' => 'This reset link is invalid or has expired'];
         }
-        
-        // Validate new password
-        if (strlen($newPassword) < 6) {
-            return ['success' => false, 'error' => 'Password must be at least 6 characters'];
-        }
-        
-        // Hash new password
-        $passwordHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => HASH_COST]);
-        
-        // Update password
-        $updated = self::$db->update(
-            "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?",
-            [$passwordHash, $reset['user_id']]
-        );
-        
-        if ($updated) {
-            // Mark token as used
-            self::$db->update("UPDATE password_resets SET used = 1 WHERE id = ?", [$reset['id']]);
-            
-            // Invalidate all sessions for this user
-            self::$db->delete("DELETE FROM user_sessions WHERE user_id = ?", [$reset['user_id']]);
-            
-            return ['success' => true, 'message' => 'Password reset successfully'];
-        }
-        
-        return ['success' => false, 'error' => 'Password reset failed'];
+
+        $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => HASH_COST]);
+        self::db()->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$hash, $reset['user_id']]);
+        self::db()->execute('UPDATE password_resets SET used = 1 WHERE id = ?', [$reset['id']]);
+        // invalidate all existing sessions for this user
+        self::db()->execute('DELETE FROM user_sessions WHERE user_id = ?', [$reset['user_id']]);
+
+        return ['ok' => true, 'message' => 'Password reset successfully — you can now login'];
     }
-    
-    /**
-     * Send password reset email
-     */
-    private static function sendPasswordResetEmail($email, $resetLink) {
-        $subject = "Password Reset - " . APP_NAME;
-        $message = "Hello,\n\nYou requested a password reset. Click the link below to reset your password:\n\n$resetLink\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\nRegards,\n" . APP_NAME . " Team";
-        $headers = "From: " . SMTP_FROM_NAME . " <" . SMTP_FROM_EMAIL . ">\r\n";
-        $headers .= "Reply-To: " . SMTP_FROM_EMAIL . "\r\n";
-        $headers .= "X-Mailer: PHP/" . phpversion();
-        
-        mail($email, $subject, $message, $headers);
-    }
-    
-    /**
-     * Generate CSRF token
-     */
-    public static function generateCsrfToken() {
+
+    /* ------------------------------------------------------------------
+     * CSRF
+     * ------------------------------------------------------------------ */
+    public static function csrfToken()
+    {
         if (empty($_SESSION[CSRF_TOKEN_NAME])) {
             $_SESSION[CSRF_TOKEN_NAME] = bin2hex(random_bytes(32));
         }
         return $_SESSION[CSRF_TOKEN_NAME];
     }
-    
-    /**
-     * Verify CSRF token
-     */
-    public static function verifyCsrfToken($token) {
-        return isset($_SESSION[CSRF_TOKEN_NAME]) && hash_equals($_SESSION[CSRF_TOKEN_NAME], $token);
+
+    public static function verifyCsrf($token)
+    {
+        return !empty($_SESSION[CSRF_TOKEN_NAME])
+            && is_string($token)
+            && hash_equals($_SESSION[CSRF_TOKEN_NAME], $token);
     }
 }

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Umma Directory — Discover Muslim-Friendly Businesses, Mosques & Fundis</title>
+  <meta name="description" content="Find trusted businesses, mosques, fundis and charities in your community. Read reviews, view prayer times and connect with local Muslim services.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#d32323">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/img/favicon.svg">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <!-- Hero — Yelp-style white with Find/Near search -->
+    <section class="hero">
+      <div class="container">
+        <h1 data-i18n="Discover the Best in Your Community">The best halal businesses, mosques & fundis in your community</h1>
+        <p>Find trusted, reviewed places — from restaurants to skilled workers.</p>
+
+        <form class="yelp-search" id="heroSearch" action="businesses.html" method="get">
+          <div class="search-field autocomplete-wrap">
+            <label for="hero-q">Find</label>
+            <input id="hero-q" type="text" name="q" placeholder="restaurants, plumbers, mosques…" aria-label="What are you looking for?" autocomplete="off">
+            <div class="autocomplete" id="heroSuggest"></div>
+          </div>
+          <div class="search-field">
+            <label for="hero-near">Near</label>
+            <input id="hero-near" type="text" name="location" placeholder="Nairobi, Mombasa, Kisumu…" aria-label="City or area">
+          </div>
+          <button class="btn btn-primary btn-search" type="submit">Search</button>
+        </form>
+
+        <div class="hero-stats" id="heroStats">
+          <div><b id="statBiz">–</b>Halal businesses</div>
+          <div><b id="statMosque">–</b>Mosques</div>
+          <div><b id="statFundi">–</b>Trusted fundis</div>
+          <div><b id="statReviews">–</b>Reviews</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sponsored strip -->
+    <div class="container" id="sponsoredStrip"></div>
+
+    <!-- Categories -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="Explore by category">Explore by category</h2>
+            <p class="sub">Jump straight to what you need</p>
+          </div>
+        </div>
+        <div class="category-grid" id="categoryChips"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Featured businesses -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="Featured businesses">Featured businesses</h2>
+            <p class="sub">Loved by the community</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="businesses.html">View all</a>
+        </div>
+        <div class="grid" id="featuredBusinesses"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Top mosques -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="Mosques near you">Mosques near you</h2>
+            <p class="sub">Prayer times, facilities & reviews</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="mosques.html">View all</a>
+        </div>
+        <div class="grid" id="topMosques"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Top fundis -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="Top rated fundis">Top rated fundis</h2>
+            <p class="sub">Verified skilled workers</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="fundis.html">View all</a>
+        </div>
+        <div class="grid" id="topFundis"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Active causes -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="Active causes">Active causes</h2>
+            <p class="sub">Zakat, sadaqah & relief campaigns</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="charities.html">View all</a>
+        </div>
+        <div class="grid" id="topCharities"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Recent Activity (Yelp's signature homepage feed) -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="Recent activity">Recent activity</h2>
+            <p class="sub">What the community is saying</p>
+          </div>
+        </div>
+        <div class="panel" id="recentActivity"><p class="muted">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section">
+      <div class="container">
+        <div class="panel center" style="background:var(--bg-soft);border:1px solid var(--border);">
+          <h2 style="font-size:1.4rem;margin-bottom:.4rem;" data-i18n="Own a business or a skill to share?">Own a business or a skill to share?</h2>
+          <p class="muted" style="margin-bottom:1.1rem;">Claim your listing, respond to reviews, and let the community find you.</p>
+          <a class="btn btn-primary" href="register.html">Create a free account</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/pages/home.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

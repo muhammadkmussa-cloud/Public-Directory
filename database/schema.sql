@@ -343,16 +343,23 @@ CREATE TABLE `review_photos` (
   FOREIGN KEY (`review_id`) REFERENCES `reviews`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Review reactions: Useful / Funny / Cool (Yelp-style)
 CREATE TABLE `review_helpful` (
   `review_id` INT(11) UNSIGNED NOT NULL,
   `user_id` INT(11) UNSIGNED NOT NULL,
-  `is_helpful` TINYINT(1) NOT NULL,
+  `reaction_type` ENUM('useful', 'funny', 'cool') NOT NULL DEFAULT 'useful',
+  `is_helpful` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`review_id`, `user_id`),
+  PRIMARY KEY (`review_id`, `user_id`, `reaction_type`),
   KEY `user_id` (`user_id`),
   FOREIGN KEY (`review_id`) REFERENCES `reviews`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- NOTE: if upgrading an existing install, run:
+--   ALTER TABLE review_helpful
+--     ADD reaction_type ENUM('useful','funny','cool') NOT NULL DEFAULT 'useful' AFTER user_id,
+--     DROP PRIMARY KEY, ADD PRIMARY KEY (review_id, user_id, reaction_type);
 
 -- ============================================
 -- 7. PHOTOS & MEDIA
@@ -681,6 +688,8 @@ CREATE TABLE `reports` (
 
 -- ============================================
 -- 14. MESSAGES (Business-Fundi Communication)
+-- NOTE: messaging is delivered via WhatsApp (wa.me links) — this table is
+-- kept for record-keeping/reference only and is not wired to the UI.
 -- ============================================
 
 CREATE TABLE `messages` (
@@ -702,30 +711,52 @@ CREATE TABLE `messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
+-- 15. QUOTE REQUESTS (fundis)
+-- Communication happens on WhatsApp: the site builds a wa.me link with the
+-- request pre-filled; the request is stored here for tracking.
+-- ============================================
+
+CREATE TABLE `quote_requests` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `fundi_id` INT(11) UNSIGNED NOT NULL,
+  `user_id` INT(11) UNSIGNED DEFAULT NULL,
+  `customer_name` VARCHAR(100) NOT NULL,
+  `customer_phone` VARCHAR(20) NOT NULL,
+  `description` TEXT NOT NULL,
+  `status` ENUM('pending', 'contacted', 'completed', 'cancelled') DEFAULT 'pending',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fundi_id` (`fundi_id`),
+  KEY `status` (`status`),
+  FOREIGN KEY (`fundi_id`) REFERENCES `fundis`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
 -- INITIAL DATA SEEDING
 -- ============================================
 
 -- Insert default categories
-INSERT INTO `categories` (`name`, `name_sw`, `slug`, `type`, `icon`, `display_order`) VALUES
-('Restaurants', 'Mikahawa', 'restaurants', 'business', 'restaurant', 1),
-('Shopping', 'Ununuzi', 'shopping', 'business', 'shopping-bag', 2),
-('Services', 'Huduma', 'services', 'business', 'briefcase', 3),
-('Health & Medical', 'Afya', 'health-medical', 'business', 'heart', 4),
-('Education', 'Elimu', 'education', 'business', 'book', 5),
-('Automotive', 'Magari', 'automotive', 'business', 'car', 6),
-('Home Services', 'Huduma za Nyumbani', 'home-services', 'fundi', 'home', 1),
-('Plumber', 'Fundi wa Mabomba', 'plumber', 'fundi', 'wrench', 2),
-('Electrician', 'Fundi wa Umeme', 'electrician', 'fundi', 'bolt', 3),
-('Carpenter', 'Fundi wa Kuni', 'carpenter', 'fundi', 'hammer', 4),
-('Tailor', 'Shone', 'tailor', 'fundi', 'scissors', 5),
-('Mechanic', 'Fundi wa Magari', 'mechanic', 'fundi', 'cog', 6),
-('Builder', 'Fundi wa Ujenzi', 'builder', 'fundi', 'trowel', 7),
-('Painter', 'Fundi wa Rangi', 'painter', 'fundi', 'brush', 8),
-('Mosque', 'Msikiti', 'mosque', 'mosque', 'mosque', 1),
-('Islamic Center', 'Kituo cha Kiislamu', 'islamic-center', 'mosque', 'kaaba', 2),
-('Orphanage', 'Yatima', 'orphanage', 'charity', 'child', 1),
-('Medical Fund', 'Msaada wa Matibabu', 'medical-fund', 'charity', 'hospital', 2),
-('Emergency Relief', 'Msaada wa Dharura', 'emergency-relief', 'charity', 'life-ring', 3);
+INSERT INTO `categories` (`name`, `name_sw`, `name_ar`, `slug`, `type`, `icon`, `display_order`) VALUES
+('Restaurants', 'Mikahawa', 'مطاعم', 'restaurants', 'business', 'restaurant', 1),
+('Shopping', 'Ununuzi', 'تسوق', 'shopping', 'business', 'shopping-bag', 2),
+('Services', 'Huduma', 'خدمات', 'services', 'business', 'briefcase', 3),
+('Health & Medical', 'Afya', 'صحة وطب', 'health-medical', 'business', 'heart', 4),
+('Education', 'Elimu', 'تعليم', 'education', 'business', 'book', 5),
+('Automotive', 'Magari', 'سيارات', 'automotive', 'business', 'car', 6),
+('Home Services', 'Huduma za Nyumbani', 'خدمات منزلية', 'home-services', 'fundi', 'home', 1),
+('Plumber', 'Fundi wa Mabomba', 'سباك', 'plumber', 'fundi', 'wrench', 2),
+('Electrician', 'Fundi wa Umeme', 'كهربائي', 'electrician', 'fundi', 'bolt', 3),
+('Carpenter', 'Fundi wa Kuni', 'نجار', 'carpenter', 'fundi', 'hammer', 4),
+('Tailor', 'Shone', 'خياط', 'tailor', 'fundi', 'scissors', 5),
+('Mechanic', 'Fundi wa Magari', 'ميكانيكي', 'mechanic', 'fundi', 'cog', 6),
+('Builder', 'Fundi wa Ujenzi', 'بناء', 'builder', 'fundi', 'trowel', 7),
+('Painter', 'Fundi wa Rangi', 'دهان', 'painter', 'fundi', 'brush', 8),
+('Mosque', 'Msikiti', 'مسجد', 'mosque', 'mosque', 'mosque', 1),
+('Islamic Center', 'Kituo cha Kiislamu', 'مركز إسلامي', 'islamic-center', 'mosque', 'kaaba', 2),
+('Orphanage', 'Yatima', 'دار أيتام', 'orphanage', 'charity', 'child', 1),
+('Medical Fund', 'Msaada wa Matibabu', 'صندوق طبي', 'medical-fund', 'charity', 'hospital', 2),
+('Emergency Relief', 'Msaada wa Dharura', 'إغاثة طارئة', 'emergency-relief', 'charity', 'life-ring', 3);
 
 -- Insert default attributes
 INSERT INTO `attributes` (`name`, `category_type`, `attribute_type`, `options`, `icon`) VALUES
