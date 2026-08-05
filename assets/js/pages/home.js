@@ -23,7 +23,7 @@ window.appReady.then(async () => {
   try {
     const featured = await api('api/businesses.php?featured=1');
     bizEl.innerHTML = featured.length
-      ? featured.map(businessCard).join('')
+      ? featured.map(businessTile).join('')
       : emptyState('No featured businesses yet', 'Be the first to add one!', '<a class="btn btn-primary btn-sm" href="register.html">Add a business</a>');
   } catch (e) {
     bizEl.innerHTML = emptyState('Could not load businesses', e.message);
@@ -34,7 +34,7 @@ window.appReady.then(async () => {
   try {
     const mosques = await api('api/mosques.php?top=1');
     mosqueEl.innerHTML = mosques.length
-      ? mosques.map(mosqueCard).join('')
+      ? mosques.map(mosqueTile).join('')
       : emptyState('No mosques listed yet', 'Check back soon.');
   } catch (e) {
     mosqueEl.innerHTML = emptyState('Could not load mosques', e.message);
@@ -45,7 +45,7 @@ window.appReady.then(async () => {
   try {
     const fundis = await api('api/fundis.php?top=1');
     fundiEl.innerHTML = fundis.length
-      ? fundis.map(fundiCard).join('')
+      ? fundis.map(fundiTile).join('')
       : emptyState('No fundis listed yet', 'Check back soon.');
   } catch (e) {
     fundiEl.innerHTML = emptyState('Could not load fundis', e.message);

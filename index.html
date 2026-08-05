@@ -12,16 +12,22 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- Hero -->
+    <!-- Hero — Yelp-style white with Find/Near search -->
     <section class="hero">
       <div class="container">
-        <h1>Discover the Best in Your Community</h1>
-        <p>Halal businesses, mosques with live prayer times, and trusted fundis — reviewed by people like you.</p>
+        <h1>The best halal businesses, mosques & fundis in your community</h1>
+        <p>Find trusted, reviewed places — from restaurants to skilled workers.</p>
 
-        <form class="search-box" action="businesses.html" method="get" id="heroSearch">
-          <input type="text" name="q" placeholder="What are you looking for?" aria-label="Search">
-          <input type="text" name="location" placeholder="City or area" aria-label="Location">
-          <button class="btn btn-primary" type="submit">🔍 Search</button>
+        <form class="yelp-search" id="heroSearch" action="businesses.html" method="get">
+          <div class="search-field">
+            <label for="hero-q">Find</label>
+            <input id="hero-q" type="text" name="q" placeholder="restaurants, plumbers, mosques…" aria-label="What are you looking for?">
+          </div>
+          <div class="search-field">
+            <label for="hero-near">Near</label>
+            <input id="hero-near" type="text" name="location" placeholder="Nairobi, Mombasa, Kisumu…" aria-label="City or area">
+          </div>
+          <button class="btn btn-primary btn-search" type="submit">Search</button>
         </form>
 
         <div class="hero-stats" id="heroStats">
@@ -91,9 +97,9 @@
     <!-- CTA -->
     <section class="section">
       <div class="container">
-        <div class="panel center" style="background:linear-gradient(135deg,#e7f6f0,#d4ede2);border:0;">
-          <h2 style="font-size:1.5rem;margin-bottom:.4rem;">Own a business or a skill to share?</h2>
-          <p class="muted" style="margin-bottom:1.2rem;">Claim your listing, respond to reviews, and let the community find you.</p>
+        <div class="panel center" style="background:var(--bg-soft);border:1px solid var(--border);">
+          <h2 style="font-size:1.4rem;margin-bottom:.4rem;">Own a business or a skill to share?</h2>
+          <p class="muted" style="margin-bottom:1.1rem;">Claim your listing, respond to reviews, and let the community find you.</p>
           <a class="btn btn-primary" href="register.html">Create a free account</a>
         </div>
       </div>

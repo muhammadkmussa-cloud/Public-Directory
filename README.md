@@ -21,7 +21,7 @@ A Yelp-style directory for the Muslim community — **halal businesses, mosques 
 ├── index.html / businesses.html / business.html / mosques.html / mosque.html
 │   fundis.html / fundi.html / login.html / register.html / profile.html / 404.html
 ├── assets/
-│   ├── css/style.css            # all styles (emerald theme, responsive)
+│   ├── css/style.css            # all styles (Yelp-inspired, responsive)
 │   ├── js/
 │   │   ├── app.js               # API client, auth state, layout, card renderers
 │   │   ├── mock.js              # sample data used only when the API is offline

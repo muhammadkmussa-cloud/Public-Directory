@@ -132,6 +132,7 @@ const HEADER_HTML = `
       <a class="nav-link" href="businesses.html">Businesses</a>
       <a class="nav-link" href="mosques.html">Mosques</a>
       <a class="nav-link" href="fundis.html">Fundis</a>
+      <a class="btn btn-primary btn-write" href="businesses.html">✏️ Write a Review</a>
       <div class="nav-auth" id="navAuth"></div>
     </div>
   </div>
@@ -235,25 +236,30 @@ async function boot() {
 /* ============================================================
  * Shared card renderers
  * ============================================================ */
+/* ---- Yelp-style horizontal result cards (listing pages) ---- */
 function businessCard(b) {
   return `
-  <article class="card listing-card">
-    <a class="card-media" href="business.html?id=${b.id}">
+  <article class="card result-card">
+    <a class="result-media" href="business.html?id=${b.id}">
       ${b.primary_photo
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
         : `<div class="media-placeholder">🛍️</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
-    <div class="card-body">
-      <div class="card-top">
-        <h3 class="card-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
-        <span class="price">${esc(b.price_range || '$')}</span>
+    <div class="result-body">
+      <h3 class="result-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
+      <div class="rating-row">
+        ${starsHtml(b.rating_average)}
+        <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span>
+        <span class="muted">(${b.review_count || 0})</span>
+        <span class="result-meta"> · ${esc(b.price_range || '$')}${b.category_name ? ' · ' + esc(b.category_name) : ''}</span>
       </div>
-      <div class="rating-row">${starsHtml(b.rating_average)} <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span><span class="muted">(${b.review_count || 0})</span></div>
-      <p class="card-desc">${esc(b.short_description || '')}</p>
-      <div class="card-meta">
-        <span>📍 ${esc(b.city || '')}</span>
-        ${b.category_name ? `<span class="chip">${esc(b.category_name)}</span>` : ''}
+      ${b.is_open ? '<span class="open-now">Open</span>' : ''}
+      <p class="result-snippet">${esc(b.short_description || '')}</p>
+      <div class="result-actions">
+        ${b.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(b.phone)}">📞 Call</a>` : ''}
+        ${b.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">🧭 Directions</a>` : ''}
+        <span class="result-loc">📍 ${esc(b.city || '')}</span>
       </div>
     </div>
   </article>`;
@@ -261,19 +267,28 @@ function businessCard(b) {
 
 function mosqueCard(m) {
   return `
-  <article class="card listing-card">
-    <a class="card-media" href="mosque.html?id=${m.id}">
+  <article class="card result-card">
+    <a class="result-media" href="mosque.html?id=${m.id}">
       ${m.primary_photo
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
         : `<div class="media-placeholder">🕌</div>`}
       ${m.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
-    <div class="card-body">
-      <h3 class="card-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
-      <div class="rating-row">${starsHtml(m.rating_average)} <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span><span class="muted">(${m.review_count || 0})</span></div>
-      <p class="card-desc">${esc(m.address || '')}</p>
-      ${m.next_prayer ? `<div class="prayer-now"><span>🕌 Next: <b>${esc(m.next_prayer.name)}</b></span><span>${esc(m.next_prayer.time)}</span></div>` : ''}
-      <div class="card-meta"><span>📍 ${esc(m.city || '')}</span></div>
+    <div class="result-body">
+      <h3 class="result-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
+      <div class="rating-row">
+        ${starsHtml(m.rating_average)}
+        <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span>
+        <span class="muted">(${m.review_count || 0})</span>
+        <span class="result-meta"> · Mosque</span>
+      </div>
+      ${m.next_prayer ? `<span class="prayer-now"><span>🕌 Next: <b>${esc(m.next_prayer.name)}</b> at ${esc(m.next_prayer.time)}</span></span>` : ''}
+      <p class="result-snippet">${esc(m.address || '')}</p>
+      <div class="result-actions">
+        ${m.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(m.phone)}">📞 Call</a>` : ''}
+        ${m.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">🧭 Directions</a>` : ''}
+        <span class="result-loc">📍 ${esc(m.city || '')}</span>
+      </div>
     </div>
   </article>`;
 }
@@ -281,22 +296,91 @@ function mosqueCard(m) {
 function fundiCard(f) {
   const skills = (f.skills || []).slice(0, 3);
   return `
-  <article class="card listing-card">
-    <a class="card-media" href="fundi.html?id=${f.id}">
+  <article class="card result-card">
+    <a class="result-media" href="fundi.html?id=${f.id}">
       ${f.profile_photo
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
         : `<div class="media-placeholder">🧰</div>`}
       ${f.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
-    <div class="card-body">
-      <h3 class="card-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
-      <p class="card-prof">${esc(f.profession)}${f.years_experience ? ' · ' + f.years_experience + ' yrs exp' : ''}</p>
-      <div class="rating-row">${starsHtml(f.rating_average)} <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span><span class="muted">(${f.review_count || 0})</span></div>
-      <div class="chips">${skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
-      <div class="card-meta">
-        <span>📍 ${esc(f.city || '')}</span>
-        ${f.hourly_rate_min ? `<span class="price">${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}</span>` : ''}
+    <div class="result-body">
+      <h3 class="result-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
+      <div class="rating-row">
+        ${starsHtml(f.rating_average)}
+        <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span>
+        <span class="muted">(${f.review_count || 0})</span>
+        <span class="result-meta"> · ${esc(f.profession)}${f.years_experience ? ' · ' + f.years_experience + ' yrs' : ''}</span>
       </div>
+      <div class="chips">${skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
+      <p class="result-snippet">${esc(f.bio || '')}</p>
+      <div class="result-actions">
+        ${f.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(f.phone)}">📞 Call</a>` : ''}
+        ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
+        <span class="result-loc">📍 ${esc(f.city || '')}${f.hourly_rate_min ? ' · ' + fmtMoney(f.hourly_rate_min) + '/hr' : ''}</span>
+      </div>
+    </div>
+  </article>`;
+}
+
+/* ---- compact tiles (homepage modules, like Yelp's "popular" rows) ---- */
+function businessTile(b) {
+  return `
+  <article class="card tile-card">
+    <a class="tile-media" href="business.html?id=${b.id}">
+      ${b.primary_photo
+        ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
+        : `<div class="media-placeholder">🛍️</div>`}
+      ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+    </a>
+    <div class="tile-body">
+      <h3 class="tile-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
+      <div class="rating-row">
+        ${starsHtml(b.rating_average)}
+        <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span>
+        <span class="muted">(${b.review_count || 0})</span>
+      </div>
+      <div class="tile-loc">📍 ${esc(b.city || '')}${b.category_name ? ' · ' + esc(b.category_name) : ''}</div>
+    </div>
+  </article>`;
+}
+
+function mosqueTile(m) {
+  return `
+  <article class="card tile-card">
+    <a class="tile-media" href="mosque.html?id=${m.id}">
+      ${m.primary_photo
+        ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
+        : `<div class="media-placeholder">🕌</div>`}
+    </a>
+    <div class="tile-body">
+      <h3 class="tile-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
+      <div class="rating-row">
+        ${starsHtml(m.rating_average)}
+        <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span>
+        <span class="muted">(${m.review_count || 0})</span>
+      </div>
+      ${m.next_prayer ? `<span class="prayer-now">Next: <b>${esc(m.next_prayer.name)}</b> ${esc(m.next_prayer.time)}</span>` : ''}
+      <div class="tile-loc">📍 ${esc(m.city || '')}</div>
+    </div>
+  </article>`;
+}
+
+function fundiTile(f) {
+  return `
+  <article class="card tile-card">
+    <a class="tile-media" href="fundi.html?id=${f.id}">
+      ${f.profile_photo
+        ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
+        : `<div class="media-placeholder">🧰</div>`}
+    </a>
+    <div class="tile-body">
+      <h3 class="tile-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
+      <div class="rating-row">
+        ${starsHtml(f.rating_average)}
+        <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span>
+        <span class="muted">(${f.review_count || 0})</span>
+      </div>
+      <div class="tile-loc">${esc(f.profession)} · 📍 ${esc(f.city || '')}</div>
     </div>
   </article>`;
 }
@@ -322,8 +406,8 @@ function reviewCard(r) {
     <p class="review-text">${esc(r.content || '')}</p>
     ${r.owner_response ? `<div class="owner-response"><b>Owner response:</b> ${esc(r.owner_response)}</div>` : ''}
     <div class="review-actions">
-      <button class="btn btn-ghost btn-sm helpful-btn" data-review-id="${r.id}">
-        👍 Helpful <span class="helpful-count">${r.helpful_count || 0}</span>
+      <button class="reaction-btn helpful-btn" data-review-id="${r.id}">
+        👍 Useful <span class="helpful-count">${r.helpful_count || 0}</span>
       </button>
     </div>
   </article>`;
