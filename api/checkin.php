@@ -1,67 +1,66 @@
 <?php
 /**
- * Check-in API Handler
- * Allows users to check in at businesses/mosques
+ * Check-in API
+ *   POST api/checkin.php  {checkinable_id, checkinable_type: 'business'|'mosque', note}
+ * Requires login + CSRF.
  */
+require __DIR__ . '/_bootstrap.php';
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/Database.php';
-require_once __DIR__ . '/../includes/Auth.php';
-
-header('Content-Type: application/json');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit;
-}
+require_method('POST');
+$user = require_login();
+require_csrf();
 
 $db = Database::getInstance();
-$auth = new Auth();
-$user = $auth->getCurrentUser();
+$body = json_body();
 
-if (!$user) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please login to check in']);
-    exit;
+$checkinableId   = (int)($body['checkinable_id'] ?? 0);
+$checkinableType = $body['checkinable_type'] ?? '';
+$note            = trim($body['note'] ?? '');
+
+if (!in_array($checkinableType, ['business', 'mosque'], true) || $checkinableId < 1) {
+    json_err('Invalid check-in target', 422);
 }
 
+$table = $checkinableType === 'business' ? 'businesses' : 'mosques';
+if (!$db->fetchOne("SELECT id FROM $table WHERE id = ?", [$checkinableId])) {
+    json_err('Listing not found', 404);
+}
+
+// cooldown: one check-in per user per listing per day
+$today = date('Y-m-d');
+$recent = $db->fetchOne(
+    'SELECT id FROM checkins
+      WHERE user_id = ? AND checkinable_id = ? AND checkinable_type = ? AND DATE(created_at) = ?',
+    [$user['id'], $checkinableId, $checkinableType, $today]
+);
+if ($recent) {
+    json_err('You already checked in here today', 409);
+}
+
+$db->begin();
 try {
-    $listingId = filter_input(INPUT_POST, 'listing_id', FILTER_VALIDATE_INT);
-    $type = $_POST['type'] ?? 'business';
-    $message = trim($_POST['message'] ?? '');
-
-    if (!$listingId) {
-        throw new Exception('Invalid listing');
+    $db->insert(
+        'INSERT INTO checkins (user_id, checkinable_id, checkinable_type, note) VALUES (?, ?, ?, ?)',
+        [$user['id'], $checkinableId, $checkinableType, $note ?: null]
+    );
+    // businesses carry a checkin_count column; mosques don't (count rows instead)
+    if ($checkinableType === 'business') {
+        $db->execute('UPDATE businesses SET checkin_count = checkin_count + 1 WHERE id = ?', [$checkinableId]);
     }
-
-    // Verify listing exists
-    $table = $type === 'business' ? 'businesses' : ($type === 'mosque' ? 'mosques' : 'fundis');
-    $listing = $db->queryOne("SELECT id, name FROM $table WHERE id = :id", [':id' => $listingId]);
-
-    if (!$listing) {
-        throw new Exception('Listing not found');
-    }
-
-    // Record check-in
-    $db->query("INSERT INTO check_ins (user_id, listing_id, listing_type, message, created_at) 
-                VALUES (:uid, :lid, :type, :msg, NOW())", [
-        ':uid' => $user['id'],
-        ':lid' => $listingId,
-        ':type' => $type,
-        ':msg' => $message
-    ]);
-
-    // Update user check-in count for badges
-    $db->query("UPDATE users SET check_in_count = check_in_count + 1 WHERE id = :uid", [':uid' => $user['id']]);
-
-    echo json_encode([
-        'success' => true, 
-        'message' => "Checked in at {$listing['name']}!",
-        'check_in_count' => ($user['check_in_count'] ?? 0) + 1
-    ]);
-
-} catch (Exception $e) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    $db->execute('UPDATE users SET total_checkins = total_checkins + 1 WHERE id = ?', [$user['id']]);
+    $db->commit();
+} catch (Throwable $e) {
+    $db->rollback();
+    error_log('Check-in failed: ' . $e->getMessage());
+    json_err('Could not save check-in', 500);
 }
+
+if ($checkinableType === 'business') {
+    $count = (int)$db->fetchValue('SELECT checkin_count FROM businesses WHERE id = ?', [$checkinableId]);
+} else {
+    $count = (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM checkins WHERE checkinable_id = ? AND checkinable_type = ?',
+        [$checkinableId, $checkinableType]
+    );
+}
+json_ok(['checkin_count' => $count], 201);

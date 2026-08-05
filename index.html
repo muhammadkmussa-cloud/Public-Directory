@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Umma Directory — Discover Muslim-Friendly Businesses, Mosques & Fundis</title>
+  <meta name="description" content="Find trusted businesses, mosques, fundis and charities in your community. Read reviews, view prayer times and connect with local Muslim services.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <h1>Discover the Best in Your Community</h1>
+        <p>Halal businesses, mosques with live prayer times, and trusted fundis — reviewed by people like you.</p>
+
+        <form class="search-box" action="businesses.html" method="get" id="heroSearch">
+          <input type="text" name="q" placeholder="What are you looking for?" aria-label="Search">
+          <input type="text" name="location" placeholder="City or area" aria-label="Location">
+          <button class="btn btn-primary" type="submit">🔍 Search</button>
+        </form>
+
+        <div class="hero-stats" id="heroStats">
+          <div><b id="statBiz">–</b>Halal businesses</div>
+          <div><b id="statMosque">–</b>Mosques</div>
+          <div><b id="statFundi">–</b>Trusted fundis</div>
+          <div><b id="statReviews">–</b>Reviews</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Explore by category</h2>
+            <p class="sub">Jump straight to what you need</p>
+          </div>
+        </div>
+        <div class="category-grid" id="categoryChips"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Featured businesses -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Featured businesses</h2>
+            <p class="sub">Loved by the community</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="businesses.html">View all</a>
+        </div>
+        <div class="grid" id="featuredBusinesses"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Top mosques -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Mosques near you</h2>
+            <p class="sub">Prayer times, facilities & reviews</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="mosques.html">View all</a>
+        </div>
+        <div class="grid" id="topMosques"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Top fundis -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Top rated fundis</h2>
+            <p class="sub">Verified skilled workers</p>
+          </div>
+          <a class="btn btn-outline btn-sm" href="fundis.html">View all</a>
+        </div>
+        <div class="grid" id="topFundis"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section">
+      <div class="container">
+        <div class="panel center" style="background:linear-gradient(135deg,#e7f6f0,#d4ede2);border:0;">
+          <h2 style="font-size:1.5rem;margin-bottom:.4rem;">Own a business or a skill to share?</h2>
+          <p class="muted" style="margin-bottom:1.2rem;">Claim your listing, respond to reviews, and let the community find you.</p>
+          <a class="btn btn-primary" href="register.html">Create a free account</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/pages/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account — Umma Directory</title>
+  <meta name="description" content="Join Umma Directory for free.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <div class="container auth-wrap">
+      <div class="auth-card">
+        <h1>Join the community</h1>
+        <p class="sub">Write reviews, check in, and help others find the best.</p>
+        <div id="alertBox"></div>
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="full_name">Full name</label>
+            <input type="text" id="full_name" name="full_name" required autocomplete="name" placeholder="Amina Hassan">
+          </div>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required minlength="3" maxlength="50" autocomplete="username" placeholder="amina_hassan">
+            <div class="hint">3–50 characters</div>
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Min 8 characters">
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone (optional)</label>
+              <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+254 7XX XXX XXX">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="registerBtn">Create account</button>
+        </form>
+        <div class="auth-alt">Already have an account? <a href="login.html">Login</a></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/pages/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mosques — Umma Directory</title>
+  <meta name="description" content="Find mosques with prayer times, facilities and community reviews.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <div class="container">
+      <div class="page-head">
+        <h1>Mosques</h1>
+        <p id="resultCount">Loading…</p>
+      </div>
+
+      <form class="filters" id="filtersForm">
+        <div class="filter">
+          <label for="f-q">Search</label>
+          <input type="text" id="f-q" name="q" placeholder="Name, address…">
+        </div>
+        <div class="filter">
+          <label for="f-city">City</label>
+          <select id="f-city" name="city"><option value="">All cities</option></select>
+        </div>
+        <div class="filter">
+          <button class="btn btn-primary btn-block" type="submit">Search</button>
+          <a class="btn btn-ghost btn-block" href="mosques.html" style="margin-top:.4rem;">Clear</a>
+        </div>
+      </form>
+
+      <div class="grid" id="mosqueResults">
+        <div class="card listing-card skeleton"><div class="skeleton-media"></div><div class="card-body"><div class="sk-line w60"></div><div class="sk-line w40"></div><div class="sk-line w80"></div></div></div>
+        <div class="card listing-card skeleton"><div class="skeleton-media"></div><div class="card-body"><div class="sk-line w60"></div><div class="sk-line w40"></div><div class="sk-line w80"></div></div></div>
+        <div class="card listing-card skeleton"><div class="skeleton-media"></div><div class="card-body"><div class="sk-line w60"></div><div class="sk-line w40"></div><div class="sk-line w80"></div></div></div>
+      </div>
+      <div id="pagination"></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/pages/mosques.js"></script>
+</body>
+</html>

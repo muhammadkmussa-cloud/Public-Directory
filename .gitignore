@@ -43,8 +43,9 @@ vendor/
 # Session files
 sess_*
 
-# Uploads/temporary files
-uploads/
+# Uploads/temporary files (keep the protective .htaccess)
+uploads/*
+!uploads/.htaccess
 temp/
 tmp/
 

@@ -1,0 +1,206 @@
+<?php
+/**
+ * Businesses API
+ *   GET api/businesses.php                    → list (q, location, category, price, min_rating, open_now, sort, page)
+ *   GET api/businesses.php?id=5               → detail + photos + reviews + similar
+ *   GET api/businesses.php?featured=1         → featured set for the homepage
+ */
+require __DIR__ . '/_bootstrap.php';
+
+require_method('GET');
+
+$db = Database::getInstance();
+
+/* ================= detail ================= */
+if (isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+    $business = $db->fetchOne(
+        'SELECT b.*,
+                (SELECT c.name FROM categories c
+                   JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
+                  ORDER BY bc.is_primary DESC, c.display_order LIMIT 1) AS category_name,
+                (SELECT c.icon FROM categories c
+                   JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
+                  ORDER BY bc.is_primary DESC, c.display_order LIMIT 1) AS category_icon
+           FROM businesses b WHERE b.id = ?',
+        [$id]
+    );
+    if (!$business) {
+        json_err('Business not found', 404);
+    }
+
+    $photos = $db->fetchAll(
+        'SELECT id, photo_path, thumbnail_path, caption, is_primary
+           FROM business_photos WHERE business_id = ? ORDER BY is_primary DESC, id ASC',
+        [$id]
+    );
+
+    $reviews = $db->fetchAll(
+        'SELECT r.id, r.rating, r.title, r.content, r.helpful_count, r.is_verified_visit,
+                r.owner_response, r.created_at,
+                u.full_name, u.profile_photo
+           FROM reviews r
+           JOIN users u ON u.id = r.user_id
+          WHERE r.reviewable_id = ? AND r.reviewable_type = \'business\' AND r.is_approved = 1 AND r.is_hidden = 0
+          ORDER BY r.created_at DESC
+          LIMIT 20',
+        [$id]
+    );
+    foreach ($reviews as &$r) {
+        $r['user'] = ['full_name' => $r['full_name'], 'profile_photo' => $r['profile_photo']];
+        unset($r['full_name'], $r['profile_photo']);
+    }
+
+    $breakdown = array_fill(1, 5, 0);
+    foreach ($db->fetchAll(
+        'SELECT rating, COUNT(*) AS c FROM reviews
+          WHERE reviewable_id = ? AND reviewable_type = \'business\'
+          GROUP BY rating',
+        [$id]
+    ) as $row) {
+        $breakdown[(int)$row['rating']] = (int)$row['c'];
+    }
+
+    $similar = $db->fetchAll(
+        'SELECT b.id, b.name, b.slug, b.city, b.price_range, b.is_verified,
+                b.rating_average, b.review_count,
+                (SELECT photo_path FROM business_photos WHERE business_id = b.id
+                  ORDER BY is_primary DESC, id DESC LIMIT 1) AS primary_photo
+           FROM businesses b
+           JOIN business_categories bc ON bc.business_id = b.id
+           JOIN categories c ON c.id = bc.category_id
+           JOIN (SELECT category_id FROM business_categories WHERE business_id = ? LIMIT 1) mine
+             ON mine.category_id = c.id
+          WHERE b.id != ? AND b.is_open = 1
+          GROUP BY b.id
+          ORDER BY b.rating_average DESC, b.review_count DESC
+          LIMIT 4',
+        [$id, $id]
+    );
+
+    // decode JSON columns for the frontend
+    foreach (['opening_hours', 'amenities', 'payment_methods', 'languages'] as $col) {
+        if (!empty($business[$col])) {
+            $business[$col] = json_decode($business[$col], true);
+        }
+    }
+
+    json_ok([
+        'business' => $business,
+        'photos'   => $photos,
+        'reviews'  => $reviews,
+        'rating_breakdown' => $breakdown,
+        'similar'  => $similar,
+    ]);
+}
+
+/* ================= featured (homepage) ================= */
+if (isset($_GET['featured'])) {
+    $featured = $db->fetchAll(
+        'SELECT b.id, b.name, b.slug, b.city, b.price_range, b.short_description,
+                b.is_verified, b.rating_average, b.review_count,
+                (SELECT c.name FROM categories c
+                   JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
+                  ORDER BY bc.is_primary DESC LIMIT 1) AS category_name,
+                (SELECT photo_path FROM business_photos WHERE business_id = b.id
+                  ORDER BY is_primary DESC, id DESC LIMIT 1) AS primary_photo
+           FROM businesses b
+          WHERE b.is_verified = 1 AND b.is_open = 1
+          ORDER BY b.rating_average DESC, b.review_count DESC
+          LIMIT 6'
+    );
+    json_ok($featured);
+}
+
+/* ================= list ================= */
+$q          = trim($_GET['q'] ?? '');
+$location   = trim($_GET['location'] ?? '');
+$category   = trim($_GET['slug'] ?? ($_GET['category'] ?? ''));
+$price      = trim($_GET['price'] ?? '');
+$minRating  = (float)($_GET['min_rating'] ?? 0);
+$openNow    = isset($_GET['open_now']) && $_GET['open_now'] !== '0';
+$sort       = $_GET['sort'] ?? 'rating';
+$page       = max(1, (int)($_GET['page'] ?? 1));
+$perPage    = ITEMS_PER_PAGE;
+$offset     = ($page - 1) * $perPage;
+
+$where  = ['b.is_open = 1'];
+$params = [];
+
+if ($q !== '') {
+    $like = '%' . $db->escapeLike($q) . '%';
+    $where[] = '(b.name LIKE ? OR b.short_description LIKE ? OR b.description LIKE ?)';
+    array_push($params, $like, $like, $like);
+}
+if ($location !== '') {
+    $like = '%' . $db->escapeLike($location) . '%';
+    $where[] = '(b.city LIKE ? OR b.address LIKE ? OR b.region LIKE ?)';
+    array_push($params, $like, $like, $like);
+}
+if ($category !== '') {
+    $where[] = 'EXISTS (SELECT 1 FROM business_categories bc
+                        JOIN categories c ON c.id = bc.category_id
+                       WHERE bc.business_id = b.id AND c.slug = ?)';
+    $params[] = $category;
+}
+if ($price !== '') {
+    $where[] = 'b.price_range = ?';
+    $params[] = $price;
+}
+if ($minRating > 0) {
+    $where[] = 'b.rating_average >= ?';
+    $params[] = $minRating;
+}
+if ($openNow) {
+    $where[] = 'b.is_open = 1';
+}
+
+$whereSql = implode(' AND ', $where);
+
+$total = (int)$db->fetchValue("SELECT COUNT(*) FROM businesses b WHERE $whereSql", $params);
+$pages = max(1, (int)ceil($total / $perPage));
+
+$orderMap = [
+    'rating' => 'b.rating_average DESC, b.review_count DESC',
+    'reviews' => 'b.review_count DESC',
+    'name' => 'b.name ASC',
+];
+$orderBy = $orderMap[$sort] ?? $orderMap['rating'];
+
+$items = $db->fetchAll(
+    "SELECT b.id, b.name, b.slug, b.city, b.region, b.price_range, b.short_description,
+            b.is_verified, b.rating_average, b.review_count, b.checkin_count,
+            (SELECT c.name FROM categories c
+               JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
+              ORDER BY bc.is_primary DESC LIMIT 1) AS category_name,
+            (SELECT photo_path FROM business_photos WHERE business_id = b.id
+              ORDER BY is_primary DESC, id DESC LIMIT 1) AS primary_photo
+       FROM businesses b
+      WHERE $whereSql
+      ORDER BY $orderBy
+      LIMIT $perPage OFFSET $offset",
+    $params
+);
+
+// filter facets for the sidebar
+$categories = $db->fetchAll(
+    'SELECT c.slug, c.name, c.icon, COUNT(bc.business_id) AS total
+       FROM categories c
+       LEFT JOIN business_categories bc ON bc.category_id = c.id
+      WHERE c.type = \'business\' AND c.is_active = 1
+      GROUP BY c.id
+      ORDER BY c.display_order, c.name'
+);
+$cities = $db->fetchAll(
+    'SELECT city, COUNT(*) AS total FROM businesses WHERE is_open = 1 AND city IS NOT NULL
+     GROUP BY city ORDER BY total DESC LIMIT 15'
+);
+
+json_ok([
+    'items'      => $items,
+    'total'      => $total,
+    'page'       => $page,
+    'pages'      => $pages,
+    'categories' => $categories,
+    'cities'     => $cities,
+]);

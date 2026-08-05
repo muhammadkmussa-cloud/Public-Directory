@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mosque — Umma Directory</title>
+  <meta name="description" content="Mosque details, prayer times and reviews.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <div class="container">
+      <a class="back-link" href="mosques.html">← Back to mosques</a>
+      <div id="mosqueDetail"><!-- filled by mosque.js --></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <!-- Write review modal -->
+  <div class="modal-overlay" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+    <div class="modal">
+      <button class="modal-close" data-close-modal aria-label="Close">×</button>
+      <h2 id="reviewModalTitle">Write a review</h2>
+      <form id="reviewForm">
+        <input type="hidden" name="reviewable_type" id="rvType" value="mosque">
+        <input type="hidden" name="reviewable_id" id="rvId" value="">
+        <div class="form-group">
+          <label>Your rating</label>
+          <div class="star-input">
+            <input type="radio" name="rating" value="5" id="st5" required><label for="st5">★</label>
+            <input type="radio" name="rating" value="4" id="st4"><label for="st4">★</label>
+            <input type="radio" name="rating" value="3" id="st3"><label for="st3">★</label>
+            <input type="radio" name="rating" value="2" id="st2"><label for="st2">★</label>
+            <input type="radio" name="rating" value="1" id="st1"><label for="st1">★</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rvTitle">Title</label>
+          <input type="text" id="rvTitle" name="title" maxlength="200" placeholder="Summarise your experience" required>
+        </div>
+        <div class="form-group">
+          <label for="rvContent">Your review</label>
+          <textarea id="rvContent" name="content" rows="5" maxlength="2000" placeholder="What was it like?" required style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--border);border-radius:10px;font:inherit;outline:none;"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="reviewSubmit">Submit review</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/pages/mosque.js"></script>
+</body>
+</html>
