@@ -138,9 +138,9 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
   notifications page; auto-created on new reviews (owner), claims and donations.
 - **Admin moderation console** (`moderation.html`) — review the community's
   reports, resolve or reject with notes.
-- **Multilingual (EN / SW)** — language switcher in the header (persisted),
-  dictionary-based translations for UI labels; category names use the DB's
-  `name_sw` when available.
+- **Multilingual (EN / SW / AR)** — language switcher in the header (persisted);
+  dictionary-based translations for UI labels and static headings; category names
+  use the DB's `name_sw` / `name_ar`; Arabic gets full RTL layout (`dir="rtl"`).
 - **PWA** — `manifest.json` + service worker (`sw.js`) on all 19 pages:
   installable, offline app-shell cache, network-first pages.
 - **SEO** — JSON-LD structured data (LocalBusiness / Place / Person) injected

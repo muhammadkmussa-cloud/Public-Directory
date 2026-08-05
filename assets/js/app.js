@@ -33,6 +33,15 @@ const I18N = {
     'Saved to your bookmarks': 'Imehifadhiwa',
     'Removed from bookmarks': 'Imeondolewa kwenye hifadhi',
   },
+  ar: {
+    'Write a Review': 'اكتب مراجعة',
+    'View all': 'عرض الكل',
+    'Open': 'مفتوح',
+    'Verified': 'موثّق',
+    'Sponsored': 'مموّل',
+    'Saved to your bookmarks': 'تم الحفظ في المفضلة',
+    'Removed from bookmarks': 'تمت الإزالة من المفضلة',
+  },
 };
 let lang = localStorage.getItem('umma_lang') || 'en';
 
@@ -41,11 +50,21 @@ function t(str) {
   return dict[str] || str;
 }
 function setLang(l) {
-  lang = ['en', 'sw'].includes(l) ? l : 'en';
+  lang = ['en', 'sw', 'ar'].includes(l) ? l : 'en';
   localStorage.setItem('umma_lang', lang);
+  // apply RTL direction for Arabic
+  document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', lang);
 }
 window.t = t;
 window.setLang = setLang;
+// set dir/lang on load
+(function () {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', lang);
+  }
+})();
 
 /* ============================================================
  * SVG icon system (Yelp-style line icons)
@@ -216,11 +235,11 @@ const HEADER_HTML = `
       <span></span><span></span><span></span>
     </button>
     <div class="nav-menu" id="navMenu">
-      <a class="nav-link" href="businesses.html">Businesses</a>
-      <a class="nav-link" href="mosques.html">Mosques</a>
-      <a class="nav-link" href="fundis.html">Fundis</a>
-      <a class="nav-link" href="charities.html">Charities</a>
-      <a class="btn btn-primary btn-write" href="businesses.html">${icon('pen', 14)} Write a Review</a>
+      <a class="nav-link" href="businesses.html" data-i18n="Businesses">Businesses</a>
+      <a class="nav-link" href="mosques.html" data-i18n="Mosques">Mosques</a>
+      <a class="nav-link" href="fundis.html" data-i18n="Fundis">Fundis</a>
+      <a class="nav-link" href="charities.html" data-i18n="Charities">Charities</a>
+      <a class="btn btn-primary btn-write" href="businesses.html">${icon('pen', 14)} ${t('Write a Review')}</a>
       <div class="nav-auth" id="navAuth"></div>
       <button class="btn btn-ghost nav-bell" id="notifBell" aria-label="Notifications" title="Notifications">
         ${icon('bell', 18)} <span class="notif-dot" id="notifDot" hidden></span>
@@ -228,6 +247,7 @@ const HEADER_HTML = `
       <div class="lang-switch" id="langSwitch">
         <button class="lang-btn ${lang === 'en' ? 'active' : ''}" data-lang="en">EN</button>
         <button class="lang-btn ${lang === 'sw' ? 'active' : ''}" data-lang="sw">SW</button>
+        <button class="lang-btn ${lang === 'ar' ? 'active' : ''}" data-lang="ar">ع</button>
       </div>
     </div>
   </div>
@@ -248,19 +268,19 @@ const FOOTER_HTML = `
     </div>
     <div class="footer-col">
       <h4>Discover</h4>
-      <a href="businesses.html">Businesses</a>
-      <a href="mosques.html">Mosques</a>
-      <a href="fundis.html">Fundis</a>
-      <a href="charities.html">Charities</a>
+      <a href="businesses.html" data-i18n="Businesses">Businesses</a>
+      <a href="mosques.html" data-i18n="Mosques">Mosques</a>
+      <a href="fundis.html" data-i18n="Fundis">Fundis</a>
+      <a href="charities.html" data-i18n="Charities">Charities</a>
     </div>
     <div class="footer-col">
-      <h4>Account</h4>
+      <h4 data-i18n="Account">Account</h4>
       <a href="login.html">Login</a>
       <a href="register.html">Create account</a>
       <a href="profile.html">Profile</a>
     </div>
     <div class="footer-col">
-      <h4>Project</h4>
+      <h4 data-i18n="Project">Project</h4>
       <a href="index.html">Home</a>
       <a href="admin.html">Advertise</a>
       <a href="404.html">Report an issue</a>
@@ -315,19 +335,20 @@ function renderAuthNav() {
     });
   } else {
     el.innerHTML = `
-      <a class="btn btn-ghost" href="login.html">Login</a>
-      <a class="btn btn-primary" href="register.html">Sign up</a>`;
+      <a class="btn btn-ghost" href="login.html">${t('Login')}</a>
+      <a class="btn btn-primary" href="register.html">${t('Sign up')}</a>`;
   }
 }
 
 async function boot() {
   renderLayout();
+  applyStaticI18n();
   // language switcher
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       setLang(btn.dataset.lang);
       document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b === btn));
-      toast(lang === 'sw' ? 'Lugha imebadilishwa kuwa Kiswahili' : 'Language set to English');
+      toast(lang === 'sw' ? 'Lugha imebadilishwa kuwa Kiswahili' : lang === 'ar' ? 'تم تغيير اللغة إلى العربية' : 'Language set to English');
       setTimeout(() => window.location.reload(), 400);
     });
   });
@@ -414,6 +435,61 @@ document.addEventListener('click', (e) => {
     renderNotifDropdown();
   }
 });
+
+/* ============================================================
+ * Static text i18n — pages mark elements with data-i18n="Key"
+ * ============================================================ */
+const STATIC_STRINGS = {
+  en: {},
+  sw: {
+    'Discover the Best in Your Community': 'Gundua Bora katika Jamii Yako',
+    'Explore by category': 'Vinjari kwa kategoria',
+    'Featured businesses': 'Biashara maarufu',
+    'Mosques near you': 'Misikiti karibu nawe',
+    'Top rated fundis': 'Mafundi waliofahamika',
+    'Recent activity': 'Shughuli za hivi karibuni',
+    'Active causes': 'Misaada inayoendelea',
+    'Own a business or a skill to share?': 'Unamiliki biashara au una ujuzi?',
+    'Businesses': 'Biashara',
+    'Mosques': 'Misikiti',
+    'Fundis': 'Mafundi',
+    'Charities': 'Misaada',
+    'Account': 'Akaunti',
+    'Project': 'Mradi',
+    'Login': 'Ingia',
+    'Sign up': 'Jisajili',
+    'Write a Review': 'Andika Tathmini',
+  },
+  ar: {
+    'Discover the Best in Your Community': 'اكتشف الأفضل في مجتمعك',
+    'Explore by category': 'استكشف حسب الفئة',
+    'Featured businesses': 'أعمال مميزة',
+    'Mosques near you': 'مساجد قريبة منك',
+    'Top rated fundis': 'أعلى الحرفيين تقييماً',
+    'Recent activity': 'النشاط الأخير',
+    'Active causes': 'قضايا نشطة',
+    'Own a business or a skill to share?': 'هل تمتلك عملاً أو مهارة تشاركها؟',
+    'Businesses': 'الأعمال',
+    'Mosques': 'المساجد',
+    'Fundis': 'الحرفيون',
+    'Charities': 'الجمعيات الخيرية',
+    'Account': 'الحساب',
+    'Project': 'المشروع',
+    'Login': 'تسجيل الدخول',
+    'Sign up': 'إنشاء حساب',
+    'Write a Review': 'اكتب مراجعة',
+  },
+};
+
+function applyStaticI18n(root) {
+  const scope = root || document;
+  scope.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const dict = (STATIC_STRINGS[lang] || {})[key];
+    if (dict) el.textContent = dict;
+  });
+}
+window.applyStaticI18n = applyStaticI18n;
 
 /* ============================================================
  * Review photos

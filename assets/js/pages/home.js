@@ -24,7 +24,7 @@ window.appReady.then(async () => {
     chipsEl.innerHTML = cats.map(c => `
       <a class="category-chip" href="businesses.html?category=${encodeURIComponent(c.slug)}">
         <span class="cat-icon">${icon(c.icon || 'grid', 22)}</span>
-        <span>${esc(c.name)}</span>
+        <span>${esc(lang === 'ar' && c.name_ar ? c.name_ar : lang === 'sw' && c.name_sw ? c.name_sw : c.name)}</span>
       </a>`).join('');
   } catch (e) {
     chipsEl.innerHTML = emptyState('Could not load categories', e.message);

@@ -68,12 +68,12 @@ window.mockApi = (function () {
   const ADS_BY_PLACEMENT = { search_results: [1, 2], homepage_header: [3], homepage_sidebar: [], listing_page: [4], detail_page: [4, 5] };
 
   const CATEGORIES = [
-    { id: 1, name: 'Restaurants', slug: 'restaurants', icon: '🍽️' },
-    { id: 2, name: 'Shopping', slug: 'shopping', icon: '🛍️' },
-    { id: 3, name: 'Services', slug: 'services', icon: '🔧' },
-    { id: 4, name: 'Health & Medical', slug: 'health-medical', icon: '🏥' },
-    { id: 5, name: 'Education', slug: 'education', icon: '📚' },
-    { id: 6, name: 'Automotive', slug: 'automotive', icon: '🚗' },
+    { id: 1, name: 'Restaurants', name_sw: 'Mikahawa', name_ar: 'مطاعم', slug: 'restaurants', icon: '🍽️' },
+    { id: 2, name: 'Shopping', name_sw: 'Ununuzi', name_ar: 'تسوق', slug: 'shopping', icon: '🛍️' },
+    { id: 3, name: 'Services', name_sw: 'Huduma', name_ar: 'خدمات', slug: 'services', icon: '🔧' },
+    { id: 4, name: 'Health & Medical', name_sw: 'Afya', name_ar: 'صحة وطب', slug: 'health-medical', icon: '🏥' },
+    { id: 5, name: 'Education', name_sw: 'Elimu', name_ar: 'تعليم', slug: 'education', icon: '📚' },
+    { id: 6, name: 'Automotive', name_sw: 'Magari', name_ar: 'سيارات', slug: 'automotive', icon: '🚗' },
   ];
 
   const REVIEWS = [

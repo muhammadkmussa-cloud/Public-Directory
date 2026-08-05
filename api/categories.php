@@ -11,7 +11,7 @@ $type = $_GET['type'] ?? 'business';
 
 $db = Database::getInstance();
 $rows = $db->fetchAll(
-    "SELECT id, name, name_sw, slug, icon, display_order
+    "SELECT id, name, name_sw, name_ar, slug, icon, display_order
        FROM categories
       WHERE type = ? AND is_active = 1
       ORDER BY display_order, name",
