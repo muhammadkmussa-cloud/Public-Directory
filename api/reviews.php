@@ -100,6 +100,25 @@ if ($action === 'create') {
             [$user['id'], $reviewableId, $reviewableType, $rating, $title, $content]
         );
 
+        // optional photos (paths from api/upload.php, e.g. "uploads/reviews/abc.jpg")
+        $photoPaths = $body['photo_paths'] ?? [];
+        if (is_array($photoPaths)) {
+            $baseReal = realpath(UPLOAD_PATH) ?: UPLOAD_PATH;
+            foreach (array_slice($photoPaths, 0, 5) as $path) {
+                if (!is_string($path) || $path === '') continue;
+                $full = realpath(UPLOAD_PATH . str_replace('uploads/', '', $path));
+                if ($full && strpos($full, $baseReal) === 0 && is_file($full)) {
+                    $db->insert(
+                        'INSERT INTO review_photos (review_id, photo_path) VALUES (?, ?)',
+                        [$reviewId, $path]
+                    );
+                }
+            }
+            $photoCount = (int)$db->fetchValue('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', [$reviewId]);
+            $db->execute('UPDATE reviews SET photos_count = ? WHERE id = ?', [$photoCount, $reviewId]);
+            $db->execute('UPDATE users SET total_photos = total_photos + ? WHERE id = ?', [$photoCount, $user['id']]);
+        }
+
         // refresh cached aggregates on the listing
         $agg = $db->fetchOne(
             'SELECT AVG(rating) AS avg, COUNT(*) AS cnt FROM reviews

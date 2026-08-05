@@ -155,6 +155,19 @@ INSERT INTO `review_helpful` (`review_id`, `user_id`, `reaction_type`, `is_helpf
 (1, 3, 'useful', 1), (2, 2, 'funny', 1), (3, 2, 'useful', 1), (4, 3, 'cool', 1),
 (8, 3, 'useful', 1), (11, 3, 'useful', 1), (11, 2, 'cool', 1), (5, 3, 'funny', 1);
 
+-- review photos (sample)
+INSERT INTO `review_photos` (`review_id`, `photo_path`, `caption`) VALUES
+(1, 'assets/img/sample/restaurant-1.svg', 'The famous chicken biryani'),
+(1, 'assets/img/sample/restaurant-2.svg', 'Fresh samosas'),
+(2, 'assets/img/sample/restaurant-1.svg', 'Crowded Friday evening'),
+(11, 'assets/img/sample/fundi-plumber-1.svg', 'Bathroom renovation job');
+
+-- favorites (demo user amina)
+INSERT INTO `favorites` (`user_id`, `favoritable_id`, `favoritable_type`) VALUES
+(2, 1, 'business'),
+(2, 3, 'mosque'),
+(2, 1, 'fundi');
+
 -- ---------- ADVERTISING (sample sponsored listings) ----------
 -- placement ids from schema seed: 1=homepage_header, 2=homepage_sidebar,
 -- 3=search_results, 4=listing_page, 5=detail_page

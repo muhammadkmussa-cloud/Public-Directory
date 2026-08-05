@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
 </head>
 <body>
@@ -50,6 +51,11 @@
           <label for="rvContent">Your review</label>
           <textarea id="rvContent" name="content" rows="5" maxlength="2000" placeholder="What was it like?" required style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--border);border-radius:10px;font:inherit;outline:none;"></textarea>
         </div>
+        <div class="form-group">
+          <label for="rvPhotos">Add photos (optional, up to 5)</label>
+          <input type="file" id="rvPhotos" accept="image/*" multiple style="width:100%;padding:.5rem;border:1.5px solid var(--border);border-radius:10px;font:inherit;">
+          <div class="photo-preview" id="rvPhotoPreview"></div>
+        </div>
         <button class="btn btn-primary btn-block" type="submit" id="reviewSubmit">Submit review</button>
       </form>
     </div>
@@ -57,6 +63,8 @@
 
   <script src="assets/js/app.js"></script>
   <script src="assets/js/mock.js"></script>
+  <script src="assets/js/map.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="assets/js/pages/mosque.js"></script>
 </body>
 </html>

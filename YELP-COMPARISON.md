@@ -123,12 +123,12 @@
 
 ## 6. What to build next (priority order)
 
-**Tier 1 — closes the most visible gaps (S = small, ~half-day; M = medium, 1–2 days):**
-1. **Map view** on search results + embedded map on detail pages (Leaflet + OpenStreetMap, free, no API key) — **M** · biggest visual + functional gap
-2. **Bookmarks / collections** (`favorites` table exists) — save button on cards + detail, "Saved" tab on profile — **M**
-3. **Review photos** — re-add secure `api/upload.php`, add file input to review modal — **M**
-4. **Open-now filter actually filters** (compute from `opening_hours` in the API) — **S**
-5. **Password reset** page + API (`Auth::requestPasswordReset()` logic) — **S**
+**Tier 1 — ✅ DONE (2026-08-05):**
+1. ✅ **Map view** on search results + embedded map on detail pages (Leaflet + OpenStreetMap)
+2. ✅ **Bookmarks / collections** (`favorites`) — save buttons on cards + detail, "Saved" on profile
+3. ✅ **Review photos** — secure `api/upload.php` + file input in review modal
+4. ✅ **Open-now filter** — computed live from `opening_hours`
+5. ✅ **Password reset** — forgot/reset pages + API
 
 **Tier 2 — makes it feel like a product (M–L):**
 6. **Owner dashboard**: claim listing, edit business, respond to reviews, view stats

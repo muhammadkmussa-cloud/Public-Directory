@@ -78,6 +78,8 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/auth.php?action=register` | POST | `{username, email, password, full_name, phone}` |
 | `api/auth.php?action=logout` | POST | ends session |
 | `api/auth.php?action=me` | GET | current user (or `data: null`) |
+| `api/auth.php?action=forgot` | POST | `{email}` — sends reset link (returns token in dev mode) |
+| `api/auth.php?action=reset` | POST | `{token, password}` — sets new password |
 | `api/csrf.php` | GET | `{csrf_token}` — send as `X-CSRF-Token` header |
 | `api/businesses.php` | GET | `?q=&location=&category=&price=&min_rating=&sort=&page=` |
 | `api/businesses.php?id=N` | GET | detail + photos + reviews + similar |
@@ -92,6 +94,10 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/ads.php` | POST | `{action: impression\|click, ad_id}` — track views/clicks (CSRF) |
 | `api/ads.php` | POST | `{action: create\|toggle\|delete, ...}` — manage ads (admin, CSRF) |
 | `api/ads.php?action=list` | GET | all ads + stats (admin) |
+| `api/favorites.php?action=mine` | GET | your saved listings (login) |
+| `api/favorites.php?action=status` | GET | `?favoritable_id=&favoritable_type=` → `{saved}` (login) |
+| `api/favorites.php` | POST | `{action: toggle, favoritable_id, favoritable_type}` (login + CSRF) |
+| `api/upload.php` | POST | multipart `image` + `dir` → secure upload (login + CSRF) |
 
 State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), which the frontend attaches automatically.
 
@@ -107,6 +113,16 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 
 ## Built
 
+- **Map view** — Leaflet + OpenStreetMap: interactive map on search results
+  (List/Map toggle with pins + popups) and embedded location maps on business,
+  mosque and fundi pages.
+- **Bookmarks** — save/unsave any listing (cards + detail pages), "Saved"
+  section on your profile.
+- **Review photos** — secure upload via `api/upload.php` (MIME sniff + GD
+  re-encode + thumbnails), attached to reviews and displayed in review cards.
+- **Open-now filter** — computed live from each business's `opening_hours`.
+- **Password reset** — forgot/reset pages + API (token expiry, session
+  invalidation; dev mode returns the link for testing without SMTP).
 - **Sponsored ads** — Yelp-style sponsored results interleaved into search results,
   homepage banner strip, and detail-page sidebar; impression & click tracking;
   `admin.html` (admin-only) to create, pause and delete ads.

@@ -71,4 +71,60 @@ window.appReady.then(() => {
       }
     });
   }
+
+  /* ---- forgot password ---- */
+  const forgotForm = document.getElementById('forgotForm');
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('forgotBtn');
+      btn.disabled = true; btn.textContent = 'Sending…';
+      showAlert('', 'success');
+      try {
+        const res = await api('api/auth.php?action=forgot', {
+          method: 'POST',
+          body: { email: document.getElementById('email').value.trim() },
+        });
+        // in demo/development mode the reset link is returned so it can be tested
+        if (res.reset_link) {
+          const safe = esc(res.reset_link);
+          const box = document.getElementById('alertBox');
+          if (box) box.innerHTML = '<div class="alert alert-success">Reset link generated (demo mode): <a href="' + safe + '">' + safe + '</a></div>';
+        } else {
+          showAlert(res.message || 'If that email is registered, a reset link has been sent.', 'success');
+        }
+        btn.disabled = false; btn.textContent = 'Send reset link';
+      } catch (err) {
+        showAlert(err.message || 'Something went wrong', 'error');
+        btn.disabled = false; btn.textContent = 'Send reset link';
+      }
+    });
+  }
+
+  /* ---- reset password ---- */
+  const resetForm = document.getElementById('resetForm');
+  if (resetForm) {
+    const token = new URLSearchParams(window.location.search).get('token');
+    resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pass = document.getElementById('password').value;
+      const pass2 = document.getElementById('password2').value;
+      if (pass.length < 8) { showAlert('Password must be at least 8 characters', 'error'); return; }
+      if (pass !== pass2) { showAlert('Passwords do not match', 'error'); return; }
+      const btn = document.getElementById('resetBtn');
+      btn.disabled = true; btn.textContent = 'Resetting…';
+      showAlert('', 'success');
+      try {
+        const res = await api('api/auth.php?action=reset', {
+          method: 'POST',
+          body: { token: token || '', password: pass },
+        });
+        showAlert(res.message || 'Password reset successfully', 'success');
+        setTimeout(() => (window.location.href = 'login.html'), 1500);
+      } catch (err) {
+        showAlert(err.message || 'Could not reset password', 'error');
+        btn.disabled = false; btn.textContent = 'Reset password';
+      }
+    });
+  }
 });

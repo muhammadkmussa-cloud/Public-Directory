@@ -53,6 +53,7 @@ if (isset($_GET['id'])) {
         $r['user'] = ['full_name' => $r['full_name'], 'profile_photo' => $r['profile_photo']];
         unset($r['full_name'], $r['profile_photo']);
     }
+    attachReviewPhotos($db, $reviews);
 
     $breakdown = array_fill(1, 5, 0);
     foreach ($db->fetchAll(
@@ -155,7 +156,15 @@ if ($minRating > 0) {
     $params[] = $minRating;
 }
 if ($openNow) {
-    $where[] = 'b.is_open = 1';
+    // compute from opening_hours JSON: compare current time against today's range
+    $dayKey = strtolower(date('l'));               // monday..sunday
+    $now = date('H:i');
+    $hoursJson = "JSON_UNQUOTE(JSON_EXTRACT(b.opening_hours, '$." . $dayKey . "'))";
+    $where[] = "$hoursJson <> 'Closed'"
+        . " AND SUBSTRING_INDEX($hoursJson, ' - ', 1) <= ?"
+        . " AND SUBSTRING_INDEX($hoursJson, ' - ', -1) >= ?";
+    $params[] = $now;
+    $params[] = $now;
 }
 
 $whereSql = implode(' AND ', $where);
@@ -173,6 +182,7 @@ $orderBy = $orderMap[$sort] ?? $orderMap['rating'];
 $items = $db->fetchAll(
     "SELECT b.id, b.name, b.slug, b.city, b.region, b.price_range, b.short_description,
             b.is_verified, b.is_open, b.rating_average, b.review_count, b.checkin_count,
+            b.latitude, b.longitude,
             (SELECT c.name FROM categories c
                JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
               ORDER BY bc.is_primary DESC LIMIT 1) AS category_name,

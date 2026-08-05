@@ -15,6 +15,9 @@ window.appReady.then(async () => {
     const { mosque, photos, reviews, prayer } = await api('api/mosques.php?id=' + id);
     render(mosque, photos, reviews, prayer);
     loadSponsoredSide();
+    initDetailMap('mosqueMap', mosque.latitude, mosque.longitude, mosque.name, 'mosque.html?id=' + mosque.id);
+    refreshSaveState('mosque', mosque.id);
+    wirePhotoInput();
 
     document.getElementById('checkinBtn')?.addEventListener('click', async () => {
       if (!session.user) { toast('Please login to check in', 'error'); return; }
@@ -30,6 +33,7 @@ window.appReady.then(async () => {
       const btn = document.getElementById('reviewSubmit');
       btn.disabled = true;
       try {
+        const photoPaths = await uploadReviewPhotos(document.getElementById('rvPhotos').files);
         await api('api/reviews.php', {
           method: 'POST',
           body: {
@@ -39,6 +43,7 @@ window.appReady.then(async () => {
             rating: document.querySelector('input[name="rating"]:checked')?.value,
             title: document.getElementById('rvTitle').value,
             content: document.getElementById('rvContent').value,
+            photo_paths: photoPaths,
           },
         });
         toast('Review submitted! Thank you.');
@@ -90,6 +95,7 @@ window.appReady.then(async () => {
         <div class="detail-actions">
           ${m.phone ? `<a class="btn btn-primary" href="tel:${esc(m.phone)}">${icon('phone', 14)} Call</a>` : ''}
           ${m.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
+          <button class="btn btn-ghost save-btn" data-save-type="mosque" data-save-id="${m.id}">${icon('bookmark', 14)} Save</button>
           <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
           <button class="btn btn-outline" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
         </div>
@@ -145,6 +151,11 @@ window.appReady.then(async () => {
             ${m.phone ? `<div class="side-row"><span class="lbl">Phone</span><a href="tel:${esc(m.phone)}">${esc(m.phone)}</a></div>` : ''}
             ${m.email ? `<div class="side-row"><span class="lbl">Email</span><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : ''}
           </div>` : ''}
+          <div class="side-card">
+            <h3>Location</h3>
+            <div id="mosqueMap" class="map-box" style="height:200px;margin-bottom:.6rem;"></div>
+            <div class="side-row"><span class="lbl">Address</span><span>${esc(m.address || '')}${m.city ? ', ' + esc(m.city) : ''}</span></div>
+          </div>
           <div class="side-card" id="sponsoredSide"></div>
         </aside>
       </div>

@@ -21,6 +21,7 @@ window.appReady.then(async () => {
       const btn = document.getElementById('reviewSubmit');
       btn.disabled = true;
       try {
+        const photoPaths = await uploadReviewPhotos(document.getElementById('rvPhotos').files);
         await api('api/reviews.php', {
           method: 'POST',
           body: {
@@ -30,6 +31,7 @@ window.appReady.then(async () => {
             rating: document.querySelector('input[name="rating"]:checked')?.value,
             title: document.getElementById('rvTitle').value,
             content: document.getElementById('rvContent').value,
+            photo_paths: photoPaths,
           },
         });
         toast('Review submitted! Thank you.');
@@ -99,7 +101,8 @@ window.appReady.then(async () => {
           <section class="panel">
             <h2>Reviews</h2>
             <div style="margin-bottom:1rem;">
-              <button class="btn btn-primary" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
+              <button class="btn btn-outline save-btn" data-save-type="fundi" data-save-id="${f.id}">${icon('bookmark', 14)} Save</button>
+          <button class="btn btn-primary" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
             </div>
             ${reviews.length ? reviews.map(reviewCard).join('') : '<p class="muted center" style="padding:1.5rem 0;">No reviews yet — be the first!</p>'}
           </section>
@@ -123,6 +126,11 @@ window.appReady.then(async () => {
             ${f.whatsapp ? `<div class="side-row"><span class="lbl">WhatsApp</span><a href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">Chat</a></div>` : ''}
             ${f.email ? `<div class="side-row"><span class="lbl">Email</span><a href="mailto:${esc(f.email)}">${esc(f.email)}</a></div>` : ''}
           </div>` : ''}
+          <div class="side-card">
+            <h3>Location</h3>
+            <div id="fundiMap" class="map-box" style="height:200px;margin-bottom:.6rem;"></div>
+            <div class="side-row"><span class="lbl">Address</span><span>${esc(f.city || '')}${f.region ? ', ' + esc(f.region) : ''}</span></div>
+          </div>
           <div class="side-card" id="sponsoredSide"></div>
         </aside>
       </div>

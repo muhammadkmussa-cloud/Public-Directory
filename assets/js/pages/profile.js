@@ -37,6 +37,10 @@ window.appReady.then(async () => {
       <h2>My reviews</h2>
       <div id="myReviews"><p class="muted">Loading…</p></div>
     </div>
+    <div class="panel">
+      <h2>Saved</h2>
+      <div id="savedList"><p class="muted">Loading…</p></div>
+    </div>
   `;
 
   try {
@@ -61,5 +65,28 @@ window.appReady.then(async () => {
       </div>`).join('');
   } catch (e) {
     document.getElementById('myReviews').innerHTML = '<p class="muted">Could not load your reviews.</p>';
+  }
+
+  /* ---- saved (bookmarks) ---- */
+  try {
+    const saved = await api('api/favorites.php?action=mine');
+    const el = document.getElementById('savedList');
+    if (!saved.length) {
+      el.innerHTML = '<p class="muted center" style="padding:1rem 0;">Nothing saved yet — tap the bookmark on any listing.</p>';
+      return;
+    }
+    el.innerHTML = saved.map(item => `
+      <div class="saved-row">
+        ${item.primary_photo
+          ? `<img src="${esc(item.primary_photo)}" alt="">`
+          : `<div class="saved-ph">${icon(item.type === 'business' ? 'bag' : item.type === 'mosque' ? 'mosque' : 'wrench', 22)}</div>`}
+        <a href="${esc(item.url)}" class="saved-name">
+          <b>${esc(item.name)}</b>
+          <span class="muted small">${esc(item.type)} · ${esc(item.city || '')} · ${starsHtml(item.rating_average)} (${item.review_count || 0})</span>
+        </a>
+        <button class="btn btn-outline btn-xs save-btn" data-save-type="${item.type}" data-save-id="${item.id}">${icon('bookmarkFill', 14)} Saved</button>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('savedList').innerHTML = '<p class="muted">Could not load your saved items.</p>';
   }
 });

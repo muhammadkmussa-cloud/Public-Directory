@@ -1,5 +1,5 @@
 /**
- * Businesses listing page
+ * Businesses listing page — list + map toggle
  */
 'use strict';
 
@@ -8,6 +8,12 @@ window.appReady.then(async () => {
   const resultsEl = document.getElementById('businessResults');
   const countEl = document.getElementById('resultCount');
   const pagEl = document.getElementById('pagination');
+  const mapContainer = document.getElementById('mapContainer');
+  const viewToggle = document.getElementById('viewToggle');
+
+  let lastData = null;      // raw API response (for map pins)
+  let lastAds = [];
+  let mapShown = false;
 
   // Prefill from URL
   const params = new URLSearchParams(window.location.search);
@@ -15,20 +21,32 @@ window.appReady.then(async () => {
     const el = document.getElementById(selId);
     if (el && params.get(key)) el.value = params.get(key);
   }
+  const openEl = document.getElementById('f-open');
+  if (openEl && params.get('open_now')) openEl.checked = true;
+
+  function formData() {
+    const fd = new FormData(form);
+    const out = {};
+    for (const [k, v] of fd.entries()) {
+      if (String(v).trim() !== '' && v !== '0' && v !== 'All categories' && v !== 'All cities' && v !== 'Any' && v !== 'rating') out[k] = v;
+    }
+    return out;
+  }
 
   async function load() {
-    const qs = new URLSearchParams(form ? formData(form) : {}).toString();
+    const qs = new URLSearchParams(formData()).toString();
     const [data, adsRes] = await Promise.all([
       api('api/businesses.php?' + qs),
       api('api/ads.php?placement=search_results').catch(() => null),
     ]);
+    lastData = data;
+    lastAds = (adsRes && adsRes.ads) || [];
 
     countEl.textContent = data.total.toLocaleString() + ' businesses found';
 
-    // interleave sponsored ads like Yelp: first one on top, others sprinkled in
+    // interleave sponsored ads like Yelp: first on top, others sprinkled in
     const cards = data.items.map(businessCard);
-    const ads = (adsRes && adsRes.ads) || [];
-    ads.forEach((ad, i) => {
+    lastAds.forEach((ad, i) => {
       const pos = i === 0 ? 0 : Math.min(4 + i, cards.length);
       cards.splice(pos, 0, sponsoredCard(ad));
       recordAdImpression(ad.id);
@@ -58,21 +76,40 @@ window.appReady.then(async () => {
       if (params.get('location')) citySel.value = params.get('location');
     }
 
-    // pagination
-    const base = formData(form);
-    pagEl.innerHTML = paginationHtml(data.page, data.pages, new URLSearchParams(base).toString());
+    pagEl.innerHTML = paginationHtml(data.page, data.pages, qs);
+
+    if (mapShown) showMap();
   }
 
-  function formData(formEl) {
-    const fd = new FormData(formEl);
-    const out = {};
-    for (const [k, v] of fd.entries()) if (String(v).trim() !== '' && v !== '0' && v !== 'All categories' && v !== 'All cities' && v !== 'Any' && v !== 'rating') out[k] = v;
-    return out;
+  function showMap() {
+    mapShown = true;
+    resultsEl.hidden = true;
+    pagEl.hidden = true;
+    mapContainer.hidden = false;
+    const items = (lastData.items || []).map(i => ({ ...i, type: 'business', url: 'business.html?id=' + i.id }));
+    if (!renderResultsMap('mapContainer', items) && mapContainer) {
+      mapContainer.innerHTML = '<div class="empty-state"><p>No locations available to map.</p></div>';
+    }
   }
+
+  function showList() {
+    mapShown = false;
+    resultsEl.hidden = false;
+    pagEl.hidden = false;
+    mapContainer.hidden = true;
+  }
+
+  viewToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.view-btn');
+    if (!btn) return;
+    viewToggle.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b === btn));
+    if (btn.dataset.view === 'map') showMap(); else showList();
+  });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
-    history.replaceState(null, '', '?' + new URLSearchParams(formData(form)).toString());
+    history.replaceState(null, '', '?' + new URLSearchParams(formData()).toString());
+    showList();
     load();
   });
 

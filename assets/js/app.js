@@ -36,6 +36,8 @@ const ICONS = {
   briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   car: '<path d="M3 13l1.5-5A2 2 0 0 1 6.4 6.5h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/><circle cx="7.5" cy="16.5" r="1.2"/><circle cx="16.5" cy="16.5" r="1.2"/>',
   grid: '<circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/>',
+  bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  bookmarkFill: '<path fill="currentColor" stroke="currentColor" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
 };
 
 const CATEGORY_ICONS = {
@@ -283,6 +285,81 @@ async function boot() {
 }
 
 /* ============================================================
+ * Review photos
+ * ============================================================ */
+/** Upload up to 5 files to api/upload.php → array of "uploads/..." paths */
+async function uploadReviewPhotos(files) {
+  const paths = [];
+  const list = Array.from(files || []).slice(0, 5);
+  for (const file of list) {
+    const fd = new FormData();
+    fd.append('image', file);
+    fd.append('dir', 'reviews');
+    const res = await api('api/upload.php', { method: 'POST', body: fd });
+    if (res && res.file) paths.push(res.file);
+  }
+  return paths;
+}
+
+/** Wire #rvPhotos file input → thumbnail preview */
+function wirePhotoInput() {
+  const input = document.getElementById('rvPhotos');
+  const preview = document.getElementById('rvPhotoPreview');
+  if (!input || !preview) return;
+  input.addEventListener('change', () => {
+    preview.innerHTML = '';
+    Array.from(input.files).slice(0, 5).forEach(file => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.alt = 'Photo preview';
+      preview.appendChild(img);
+    });
+  });
+}
+
+/* ============================================================
+ * Favorites (bookmarks)
+ * ============================================================ */
+function saveBtnHtml(type, id) {
+  return `<button class="save-btn" data-save-type="${type}" data-save-id="${id}" aria-label="Save" title="Save">${icon('bookmark', 16)}</button>`;
+}
+
+function setSavedState(btn, saved) {
+  btn.classList.toggle('saved', !!saved);
+  btn.innerHTML = saved ? icon('bookmarkFill', 16) : icon('bookmark', 16);
+  btn.title = saved ? 'Remove from saved' : 'Save';
+  btn.setAttribute('aria-label', saved ? 'Remove from saved' : 'Save');
+}
+
+async function toggleFavorite(type, id) {
+  if (!session.user) {
+    toast('Please login to save', 'error');
+    setTimeout(() => (window.location.href = 'login.html'), 700);
+    return null;
+  }
+  try {
+    const res = await api('api/favorites.php', {
+      method: 'POST',
+      body: { action: 'toggle', favoritable_type: type, favoritable_id: id },
+    });
+    toast(res.saved ? 'Saved to your bookmarks' : 'Removed from bookmarks');
+    return res.saved;
+  } catch (e) {
+    toast(e.message || 'Could not save', 'error');
+    return null;
+  }
+}
+
+/** If logged in, sync every visible save button for a listing */
+async function refreshSaveState(type, id) {
+  if (!session.user) return;
+  try {
+    const res = await api('api/favorites.php?action=status&favoritable_type=' + encodeURIComponent(type) + '&favoritable_id=' + id);
+    document.querySelectorAll(`.save-btn[data-save-type="${type}"][data-save-id="${id}"]`).forEach(b => setSavedState(b, res.saved));
+  } catch (e) { /* ignore */ }
+}
+
+/* ============================================================
  * Shared card renderers
  * ============================================================ */
 /* ---- Yelp-style horizontal result cards (listing pages) ---- */
@@ -294,6 +371,7 @@ function businessCard(b) {
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+      ${saveBtnHtml('business', b.id)}
     </a>
     <div class="result-body">
       <h3 class="result-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
@@ -322,6 +400,7 @@ function mosqueCard(m) {
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
       ${m.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+      ${saveBtnHtml('mosque', m.id)}
     </a>
     <div class="result-body">
       <h3 class="result-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
@@ -351,6 +430,7 @@ function fundiCard(f) {
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
       ${f.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+      ${saveBtnHtml('fundi', f.id)}
     </a>
     <div class="result-body">
       <h3 class="result-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
@@ -380,6 +460,7 @@ function businessTile(b) {
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+      ${saveBtnHtml('business', b.id)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
@@ -400,6 +481,7 @@ function mosqueTile(m) {
       ${m.primary_photo
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
+      ${saveBtnHtml('mosque', m.id)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
@@ -421,6 +503,7 @@ function fundiTile(f) {
       ${f.profile_photo
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
+      ${saveBtnHtml('fundi', f.id)}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
@@ -463,6 +546,7 @@ function reviewCard(r) {
     </div>
     <h4 class="review-title">${esc(r.title || '')}</h4>
     <p class="review-text">${esc(r.content || '')}</p>
+    ${(r.photos && r.photos.length) ? `<div class="review-photos">${r.photos.map(p => `<img src="${esc(p)}" alt="Review photo" loading="lazy">`).join('')}</div>` : ''}
     ${r.owner_response ? `<div class="owner-response"><b>Owner response:</b> ${esc(r.owner_response)}</div>` : ''}
     <div class="review-actions">${reactions}</div>
   </article>`;
@@ -564,6 +648,22 @@ function paginationHtml(page, pages, baseQuery) {
 function emptyState(title, sub, cta) {
   return `<div class="empty-state"><div class="empty-icon">${icon('search', 36)}</div><h3>${esc(title)}</h3><p>${esc(sub)}</p>${cta || ''}</div>`;
 }
+
+/* ============================================================
+ * Event delegation: save (bookmark) buttons
+ * ============================================================ */
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.save-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const type = btn.dataset.saveType;
+  const id = btn.dataset.saveId;
+  const saved = await toggleFavorite(type, id);
+  if (saved !== null) {
+    document.querySelectorAll(`.save-btn[data-save-type="${type}"][data-save-id="${id}"]`).forEach(b => setSavedState(b, saved));
+  }
+});
 
 /* ============================================================
  * Event delegation: review reactions (Useful / Funny / Cool)

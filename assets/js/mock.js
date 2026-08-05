@@ -9,12 +9,12 @@
 window.mockApi = (function () {
 
   const BUSINESSES = [
-    { id: 1, name: 'Al-Barakah Restaurant', slug: 'al-barakah-restaurant', category_name: 'Restaurants', city: 'Nairobi', region: 'Nairobi County', price_range: '$$', short_description: 'Authentic halal Swahili & Arabic cuisine in the heart of the city.', is_verified: 1, is_open: 1, rating_average: 4.5, review_count: 2, checkin_count: 34, primary_photo: 'assets/img/sample/restaurant-1.svg' },
-    { id: 2, name: 'Baitul Aman Halal Butcher', slug: 'baitul-aman-halal-butcher', category_name: 'Shopping', city: 'Mombasa', region: 'Mombasa County', price_range: '$$', short_description: 'Fresh certified halal meat and groceries.', is_verified: 1, rating_average: 5.0, review_count: 1, checkin_count: 18, primary_photo: 'assets/img/sample/butcher.svg' },
-    { id: 3, name: 'Noor Pharmacy', slug: 'noor-pharmacy', category_name: 'Health & Medical', city: 'Nairobi', region: 'Nairobi County', price_range: '$$', short_description: 'Your trusted community pharmacy.', is_verified: 1, rating_average: 4.0, review_count: 1, checkin_count: 9, primary_photo: 'assets/img/sample/pharmacy.svg' },
-    { id: 4, name: 'Iqra Bookstore & Islamic Gifts', slug: 'iqra-bookstore', category_name: 'Education', city: 'Nairobi', region: 'Nairobi County', price_range: '$', short_description: 'Books, Qurans and Islamic gifts for the whole family.', is_verified: 1, rating_average: 5.0, review_count: 1, checkin_count: 12, primary_photo: 'assets/img/sample/bookstore.svg' },
-    { id: 5, name: 'Al-Salam Travel & Tours', slug: 'al-salam-travel', category_name: 'Services', city: 'Mombasa', region: 'Mombasa County', price_range: '$$$', short_description: 'Hajj, Umrah and holiday packages you can trust.', is_verified: 1, rating_average: 5.0, review_count: 1, checkin_count: 27, primary_photo: 'assets/img/sample/travel.svg' },
-    { id: 6, name: 'Green Bites Halal Cafe', slug: 'green-bites-cafe', category_name: 'Restaurants', city: 'Kisumu', region: 'Kisumu County', price_range: '$', short_description: 'Fresh juices, coffee & light bites in a cozy space.', is_verified: 1, rating_average: 4.0, review_count: 1, checkin_count: 5, primary_photo: 'assets/img/sample/restaurant-2.svg' },
+    { id: 1, name: 'Al-Barakah Restaurant', slug: 'al-barakah-restaurant', category_name: 'Restaurants', city: 'Nairobi', region: 'Nairobi County', price_range: '$$', short_description: 'Authentic halal Swahili & Arabic cuisine in the heart of the city.', is_verified: 1, is_open: 1, rating_average: 4.5, review_count: 2, checkin_count: 34, primary_photo: 'assets/img/sample/restaurant-1.svg', latitude: -1.2864, longitude: 36.8231 },
+    { id: 2, name: 'Baitul Aman Halal Butcher', slug: 'baitul-aman-halal-butcher', category_name: 'Shopping', city: 'Mombasa', region: 'Mombasa County', price_range: '$$', short_description: 'Fresh certified halal meat and groceries.', is_verified: 1, rating_average: 5.0, review_count: 1, checkin_count: 18, primary_photo: 'assets/img/sample/butcher.svg', latitude: -4.0435, longitude: 39.6682 },
+    { id: 3, name: 'Noor Pharmacy', slug: 'noor-pharmacy', category_name: 'Health & Medical', city: 'Nairobi', region: 'Nairobi County', price_range: '$$', short_description: 'Your trusted community pharmacy.', is_verified: 1, rating_average: 4.0, review_count: 1, checkin_count: 9, primary_photo: 'assets/img/sample/pharmacy.svg', latitude: -1.2921, longitude: 36.8219 },
+    { id: 4, name: 'Iqra Bookstore & Islamic Gifts', slug: 'iqra-bookstore', category_name: 'Education', city: 'Nairobi', region: 'Nairobi County', price_range: '$', short_description: 'Books, Qurans and Islamic gifts for the whole family.', is_verified: 1, rating_average: 5.0, review_count: 1, checkin_count: 12, primary_photo: 'assets/img/sample/bookstore.svg', latitude: -1.29, longitude: 36.825 },
+    { id: 5, name: 'Al-Salam Travel & Tours', slug: 'al-salam-travel', category_name: 'Services', city: 'Mombasa', region: 'Mombasa County', price_range: '$$$', short_description: 'Hajj, Umrah and holiday packages you can trust.', is_verified: 1, rating_average: 5.0, review_count: 1, checkin_count: 27, primary_photo: 'assets/img/sample/travel.svg', latitude: -4.0435, longitude: 39.6682 },
+    { id: 6, name: 'Green Bites Halal Cafe', slug: 'green-bites-cafe', category_name: 'Restaurants', city: 'Kisumu', region: 'Kisumu County', price_range: '$', short_description: 'Fresh juices, coffee & light bites in a cozy space.', is_verified: 1, rating_average: 4.0, review_count: 1, checkin_count: 5, primary_photo: 'assets/img/sample/restaurant-2.svg', latitude: -0.1022, longitude: 34.7617 },
   ];
 
   const BUSINESS_DETAILS = {
@@ -41,9 +41,9 @@ window.mockApi = (function () {
   };
 
   const FUNDIS = [
-    { id: 1, full_name: 'Abdullahi Said', profession: 'Plumber', years_experience: 12, city: 'Mombasa', region: 'Mombasa County', is_verified: 1, rating_average: 5.0, review_count: 1, hourly_rate_min: 500, hourly_rate_max: 1500, skills: ['Plumbing', 'Water Heaters', 'Drainage', 'Bathroom Fitting', 'Emergency Repairs'], profile_photo: '', phone: '+254 712 888 999', whatsapp: '+254712888999' },
-    { id: 2, full_name: 'Fatuma Ali', profession: 'Tailor', years_experience: 8, city: 'Nairobi', region: 'Nairobi County', is_verified: 1, rating_average: 5.0, review_count: 1, hourly_rate_min: 300, hourly_rate_max: 800, skills: ['Tailoring', 'Dress Making', 'Suits', 'School Uniforms', 'Kanga & Kitenge'], profile_photo: '', phone: '+254 701 234 567', whatsapp: '+254701234567' },
-    { id: 3, full_name: 'Musa Kiprop', profession: 'Electrician', years_experience: 15, city: 'Nairobi', region: 'Nairobi County', is_verified: 1, rating_average: 4.0, review_count: 1, hourly_rate_min: 600, hourly_rate_max: 2000, skills: ['Electrical Wiring', 'Solar Installation', 'Fault Finding', 'Industrial Electrical', 'Safety Inspections'], profile_photo: '', phone: '+254 722 345 678', whatsapp: '+254722345678' },
+    { id: 1, full_name: 'Abdullahi Said', profession: 'Plumber', latitude: -4.0435, longitude: 39.6682, years_experience: 12, city: 'Mombasa', region: 'Mombasa County', is_verified: 1, rating_average: 5.0, review_count: 1, hourly_rate_min: 500, hourly_rate_max: 1500, skills: ['Plumbing', 'Water Heaters', 'Drainage', 'Bathroom Fitting', 'Emergency Repairs'], profile_photo: '', phone: '+254 712 888 999', whatsapp: '+254712888999' },
+    { id: 2, full_name: 'Fatuma Ali', profession: 'Tailor', latitude: -1.2864, longitude: 36.8231, years_experience: 8, city: 'Nairobi', region: 'Nairobi County', is_verified: 1, rating_average: 5.0, review_count: 1, hourly_rate_min: 300, hourly_rate_max: 800, skills: ['Tailoring', 'Dress Making', 'Suits', 'School Uniforms', 'Kanga & Kitenge'], profile_photo: '', phone: '+254 701 234 567', whatsapp: '+254701234567' },
+    { id: 3, full_name: 'Musa Kiprop', profession: 'Electrician', latitude: -1.2921, longitude: 36.8219, years_experience: 15, city: 'Nairobi', region: 'Nairobi County', is_verified: 1, rating_average: 4.0, review_count: 1, hourly_rate_min: 600, hourly_rate_max: 2000, skills: ['Electrical Wiring', 'Solar Installation', 'Fault Finding', 'Industrial Electrical', 'Safety Inspections'], profile_photo: '', phone: '+254 722 345 678', whatsapp: '+254722345678' },
   ];
 
   const FUNDI_DETAILS = {
@@ -77,8 +77,8 @@ window.mockApi = (function () {
   ];
 
   const REVIEWS = [
-    { id: 1, rating: 5, title: 'Best biryani in Nairobi!', content: 'The chicken biryani is incredible and the family seating is very private and comfortable. Staff are so welcoming. Highly recommended for iftar too.', helpful_count: 12, useful_count: 12, funny_count: 4, cool_count: 2, created_at: new Date(Date.now() - 86400000 * 12).toISOString(), user: { full_name: 'Amina Hassan', profile_photo: '' } },
-    { id: 2, rating: 4, title: 'Great food, busy at peak hours', content: 'Delicious samosas and the mandazi are fresh all day. Gets crowded on Friday evenings - go early!', helpful_count: 5, useful_count: 5, funny_count: 8, cool_count: 1, created_at: new Date(Date.now() - 86400000 * 5).toISOString(), user: { full_name: 'Yusuf Omar', profile_photo: '' } },
+    { id: 1, rating: 5, title: 'Best biryani in Nairobi!', content: 'The chicken biryani is incredible and the family seating is very private and comfortable. Staff are so welcoming. Highly recommended for iftar too.', helpful_count: 12, useful_count: 12, funny_count: 4, cool_count: 2, photos: ['assets/img/sample/restaurant-1.svg', 'assets/img/sample/fundi-plumber-2.svg'], created_at: new Date(Date.now() - 86400000 * 12).toISOString(), user: { full_name: 'Amina Hassan', profile_photo: '' } },
+    { id: 2, rating: 4, title: 'Great food, busy at peak hours', content: 'Delicious samosas and the mandazi are fresh all day. Gets crowded on Friday evenings - go early!', helpful_count: 5, useful_count: 5, funny_count: 8, cool_count: 1, photos: ['assets/img/sample/restaurant-2.svg'], created_at: new Date(Date.now() - 86400000 * 5).toISOString(), user: { full_name: 'Yusuf Omar', profile_photo: '' } },
   ];
 
   const CITIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Lamu'];
@@ -121,6 +121,14 @@ window.mockApi = (function () {
       if (action === 'register') {
         mockUser = { id: 99, username: parseBody(opts).username, email: parseBody(opts).email, full_name: parseBody(opts).full_name || parseBody(opts).username, user_type: 'regular', profile_photo: '', total_reviews: 0, total_checkins: 0 };
         return mockUser;
+      }
+      if (action === 'forgot') {
+        return { ok: true, message: 'Reset link generated', reset_token: 'mock-reset-token-1234567890abcdef', reset_link: 'reset.html?token=mock-reset-token-1234567890abcdef' };
+      }
+      if (action === 'reset') {
+        const b = parseBody(opts);
+        if (b.token !== 'mock-reset-token-1234567890abcdef') throw Object.assign(new Error('This reset link is invalid or has expired'), { status: 422 });
+        return { ok: true, message: 'Password reset successfully — you can now login' };
       }
       throw Object.assign(new Error('Unknown action'), { status: 404 });
     }
@@ -166,6 +174,36 @@ window.mockApi = (function () {
 
     if (path.startsWith('api/checkin.php')) return { checkin_count: 35 };
 
+    if (path.startsWith('api/favorites.php')) {
+      if (method === 'GET' && action === 'status') {
+        return { saved: mockFavorites.has(url.searchParams.get('favoritable_type') + ':' + url.searchParams.get('favoritable_id')) };
+      }
+      if (method === 'GET' && action === 'mine') {
+        if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+        return Array.from(mockFavorites).map(key => {
+          const [type, id] = key.split(':');
+          const pool = type === 'business' ? BUSINESSES : type === 'mosque' ? MOSQUES : FUNDIS;
+          const it = pool.find(x => String(x.id) === id);
+          if (!it) return null;
+          return { type, id: Number(id), url: type + '.html?id=' + id, name: it.name || it.full_name, city: it.city, rating_average: it.rating_average, review_count: it.review_count, primary_photo: it.primary_photo || it.profile_photo || null };
+        }).filter(Boolean);
+      }
+      if (method === 'POST') {
+        if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+        const b = parseBody(opts);
+        const key = b.favoritable_type + ':' + b.favoritable_id;
+        let saved;
+        if (mockFavorites.has(key)) { mockFavorites.delete(key); saved = false; }
+        else { mockFavorites.add(key); saved = true; }
+        return { saved };
+      }
+    }
+
+    if (path.startsWith('api/upload.php')) {
+      return { file: 'assets/img/sample/restaurant-1.svg', thumbnail: 'assets/img/sample/restaurant-1.svg', mime: 'image/svg+xml', size: 1000 };
+    }
+
+
     if (path.startsWith('api/ads.php')) {
       if (method === 'GET') {
         if (action === 'list') {
@@ -202,6 +240,7 @@ window.mockApi = (function () {
   }
 
   let mockUser = null;
+  const mockFavorites = new Set(['business:1', 'mosque:3']); // demo user's saved items
 
   // wrap: return {success:true,data:...} shape or throw with status
   return async function mockApi(path, opts) {

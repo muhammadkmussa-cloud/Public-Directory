@@ -46,6 +46,31 @@ if ($action === 'register') {
     json_ok($result['user'], 201);
 }
 
+/* ---- forgot password ---- */
+if ($action === 'forgot') {
+    require_method('POST');
+    require_csrf();
+    $body = json_body();
+    $result = Auth::requestPasswordReset($body['email'] ?? '');
+    if (!$result['ok']) {
+        json_err($result['error'], 422);
+    }
+    // in development mode the token is returned so the flow is testable without SMTP
+    json_ok($result);
+}
+
+/* ---- reset password ---- */
+if ($action === 'reset') {
+    require_method('POST');
+    require_csrf();
+    $body = json_body();
+    $result = Auth::resetPassword($body['token'] ?? '', $body['password'] ?? '');
+    if (!$result['ok']) {
+        json_err($result['error'], 422);
+    }
+    json_ok($result);
+}
+
 /* ---- logout ---- */
 if ($action === 'logout') {
     require_method('POST');

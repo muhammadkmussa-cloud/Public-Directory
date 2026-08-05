@@ -137,6 +137,73 @@ class Auth
     }
 
     /* ------------------------------------------------------------------
+     * Password reset
+     * ------------------------------------------------------------------ */
+    /**
+     * Create a reset token for an email.
+     * In production the token is emailed; in development/demo mode the token
+     * is returned in the response so the flow can be tested without SMTP.
+     */
+    public static function requestPasswordReset($email)
+    {
+        $email = strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Invalid email address'];
+        }
+
+        $user = self::db()->fetchOne('SELECT id FROM users WHERE email = ?', [$email]);
+        if (!$user) {
+            // don't reveal whether the email exists
+            return ['ok' => true, 'message' => 'If that email is registered, a reset link has been sent.'];
+        }
+
+        $token = bin2hex(random_bytes(32));
+        self::db()->execute(
+            'INSERT INTO password_resets (user_id, token, expires_at, used)
+             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR), 0)',
+            [$user['id'], $token]
+        );
+
+        $resetLink = (APP_URL ?: '') . '/reset.html?token=' . $token;
+        $subject = 'Reset your password — ' . APP_NAME;
+        $message = "Hello,\n\nWe received a request to reset your password. Click the link below:\n\n$resetLink\n\n"
+                 . "This link expires in 1 hour. If you didn't request this, ignore this email.\n\n— " . APP_NAME . ' Team';
+        @mail($email, $subject, $message, 'From: ' . SMTP_FROM_NAME . ' <' . SMTP_FROM_EMAIL . '>');
+
+        if (APP_ENV === 'development') {
+            return ['ok' => true, 'message' => 'Reset link generated', 'reset_token' => $token, 'reset_link' => $resetLink];
+        }
+        return ['ok' => true, 'message' => 'If that email is registered, a reset link has been sent.'];
+    }
+
+    /** Reset a password with a valid token */
+    public static function resetPassword($token, $newPassword)
+    {
+        if (!is_string($token) || strlen($token) < 32) {
+            return ['ok' => false, 'error' => 'Invalid reset token'];
+        }
+        if (strlen($newPassword) < 8) {
+            return ['ok' => false, 'error' => 'Password must be at least 8 characters'];
+        }
+
+        $reset = self::db()->fetchOne(
+            'SELECT * FROM password_resets WHERE token = ? AND used = 0 AND expires_at > NOW()',
+            [$token]
+        );
+        if (!$reset) {
+            return ['ok' => false, 'error' => 'This reset link is invalid or has expired'];
+        }
+
+        $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => HASH_COST]);
+        self::db()->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$hash, $reset['user_id']]);
+        self::db()->execute('UPDATE password_resets SET used = 1 WHERE id = ?', [$reset['id']]);
+        // invalidate all existing sessions for this user
+        self::db()->execute('DELETE FROM user_sessions WHERE user_id = ?', [$reset['user_id']]);
+
+        return ['ok' => true, 'message' => 'Password reset successfully — you can now login'];
+    }
+
+    /* ------------------------------------------------------------------
      * CSRF
      * ------------------------------------------------------------------ */
     public static function csrfToken()

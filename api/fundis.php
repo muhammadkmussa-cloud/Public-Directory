@@ -59,6 +59,7 @@ if (isset($_GET['id'])) {
         $r['user'] = ['full_name' => $r['full_name'], 'profile_photo' => $r['profile_photo']];
         unset($r['full_name'], $r['profile_photo']);
     }
+    attachReviewPhotos($db, $reviews);
 
     json_ok(['fundi' => $fundi, 'portfolio' => $portfolio, 'reviews' => $reviews]);
 }

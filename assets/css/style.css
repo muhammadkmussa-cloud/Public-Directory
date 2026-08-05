@@ -517,6 +517,71 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.01em; color: var(--text); 
 }
 
 /* ============================================================
+   Maps, bookmarks, review photos, view toggle
+   ============================================================ */
+.map-box {
+  width: 100%; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-soft); overflow: hidden; z-index: 1;
+}
+.map-box.leaflet-container { font: inherit; }
+
+/* list / map toggle */
+.view-toggle { display: inline-flex; border: 1px solid var(--border-2); border-radius: 5px; overflow: hidden; }
+.view-btn {
+  background: #fff; border: 0; padding: 0.4rem 1rem; font: inherit; font-size: 0.85rem;
+  font-weight: 700; color: var(--text-2); cursor: pointer;
+}
+.view-btn + .view-btn { border-left: 1px solid var(--border-2); }
+.view-btn.active { background: var(--red); color: #fff; }
+
+/* save (bookmark) buttons */
+.save-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease, color 0.1s ease, background 0.1s ease;
+}
+.save-btn:hover { transform: scale(1.08); color: var(--red); }
+.save-btn.saved { color: var(--red); background: #fff; }
+.detail-actions .save-btn { position: static; width: auto; height: auto; border-radius: 4px; padding: 0.55rem 1.1rem; box-shadow: none; }
+
+/* review photos */
+.review-photos { display: flex; gap: 0.5rem; margin: 0.7rem 0 0.2rem; flex-wrap: wrap; }
+.review-photos img {
+  width: 96px; height: 96px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--border); cursor: pointer; transition: transform 0.12s ease;
+}
+.review-photos img:hover { transform: scale(1.04); }
+
+/* photo upload preview */
+.photo-preview { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
+.photo-preview img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+
+/* checkbox filter (open now) */
+.checkbox-filter-wrap { display: flex; align-items: end; }
+.checkbox-filter { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; font-weight: 600; color: var(--text-2); padding: 0.55rem 0; cursor: pointer; }
+.checkbox-filter input { width: auto; }
+
+/* saved rows on profile */
+.saved-row {
+  display: grid; grid-template-columns: 56px 1fr auto; gap: 0.9rem; align-items: center;
+  padding: 0.65rem 0; border-bottom: 1px solid var(--border);
+}
+.saved-row:last-child { border-bottom: 0; }
+.saved-row img, .saved-ph {
+  width: 56px; height: 56px; border-radius: 6px; object-fit: cover;
+}
+.saved-ph {
+  background: var(--bg-soft); color: #b5b5b5; display: flex; align-items: center; justify-content: center;
+}
+.saved-name { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.saved-name b { color: var(--text); font-family: var(--font-display); }
+.saved-name:hover b { color: var(--red); }
+.saved-name .stars { font-size: 0.8rem; }
+
+/* ============================================================
    Toasts
    ============================================================ */
 .toast-box { position: fixed; bottom: 1.2rem; right: 1.2rem; z-index: 200; display: flex; flex-direction: column; gap: 0.6rem; }

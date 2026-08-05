@@ -79,6 +79,26 @@ function json_body()
     return is_array($data) ? $data : $_POST;
 }
 
+/** Attach each review's photo paths (from review_photos) to the review rows */
+function attachReviewPhotos($db, &$reviews)
+{
+    $ids = array_column($reviews, 'id');
+    if (!$ids) {
+        return;
+    }
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $byReview = [];
+    foreach ($db->fetchAll(
+        "SELECT review_id, photo_path FROM review_photos WHERE review_id IN ($in) ORDER BY id ASC",
+        $ids
+    ) as $p) {
+        $byReview[$p['review_id']][] = $p['photo_path'];
+    }
+    foreach ($reviews as &$r) {
+        $r['photos'] = $byReview[$r['id']] ?? [];
+    }
+}
+
 // ---- Error handling -------------------------------------------------------
 set_exception_handler(function ($e) {
     error_log('API error: ' . $e->getMessage());

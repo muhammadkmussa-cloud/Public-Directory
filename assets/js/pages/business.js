@@ -31,6 +31,9 @@ window.appReady.then(async () => {
     renderBusiness(business, photos, reviews, rating_breakdown);
     renderSimilar(similar);
     loadSponsoredSide();
+    initDetailMap('bizMap', business.latitude, business.longitude, business.name, 'business.html?id=' + business.id);
+    refreshSaveState('business', business.id);
+    wirePhotoInput();
 
     // check-in button
     const checkinBtn = document.getElementById('checkinBtn');
@@ -51,6 +54,7 @@ window.appReady.then(async () => {
       const btn = document.getElementById('reviewSubmit');
       btn.disabled = true;
       try {
+        const photoPaths = await uploadReviewPhotos(document.getElementById('rvPhotos').files);
         await api('api/reviews.php', {
           method: 'POST',
           body: {
@@ -60,6 +64,7 @@ window.appReady.then(async () => {
             rating: document.querySelector('input[name="rating"]:checked')?.value,
             title: document.getElementById('rvTitle').value,
             content: document.getElementById('rvContent').value,
+            photo_paths: photoPaths,
           },
         });
         toast('Review submitted! Thank you.');
@@ -101,6 +106,7 @@ window.appReady.then(async () => {
           ${b.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(b.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
           ${b.website ? `<a class="btn btn-outline" href="${esc(b.website)}" target="_blank" rel="noopener">${icon('globe', 14)} Website</a>` : ''}
           ${b.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
+          <button class="btn btn-ghost save-btn" data-save-type="business" data-save-id="${b.id}">${icon('bookmark', 14)} Save</button>
           <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
         </div>
       </div>
@@ -160,6 +166,11 @@ window.appReady.then(async () => {
           </div>
 
           ${b.checkin_count ? `<div class="side-card center"><b style="font-size:1.8rem;color:var(--red);">${b.checkin_count}</b><br><span class="muted small">check-ins</span></div>` : ''}
+          <div class="side-card">
+            <h3>Location</h3>
+            <div id="bizMap" class="map-box" style="height:200px;margin-bottom:.6rem;"></div>
+            <div class="side-row"><span class="lbl">Address</span><span id="bizAddress">${esc(b.address || '')}${b.city ? ', ' + esc(b.city) : ''}</span></div>
+          </div>
           <div class="side-card" id="sponsoredSide"></div>
         </aside>
       </div>
