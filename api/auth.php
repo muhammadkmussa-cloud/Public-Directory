@@ -62,6 +62,32 @@ if ($action === 'forgot') {
     json_ok($result);
 }
 
+/* ---- verify email (one-time link from the confirmation email) ---- */
+if ($action === 'verify') {
+    require_method('POST');
+    rate_limit('verify', 10, 300);
+    require_csrf();
+    $body = json_body();
+    $result = Auth::verifyEmail($body['token'] ?? '');
+    if (!$result['ok']) {
+        json_err($result['error'], 422);
+    }
+    json_ok($result);
+}
+
+/* ---- resend the confirmation email ---- */
+if ($action === 'resend_verification') {
+    require_method('POST');
+    rate_limit('resend_verification', 3, 900);   // max 3 / 15 min per IP
+    require_csrf();
+    $body = json_body();
+    $result = Auth::resendVerification($body['email'] ?? '');
+    if (!$result['ok']) {
+        json_err($result['error'], 422);
+    }
+    json_ok($result);
+}
+
 /* ---- reset password ---- */
 if ($action === 'reset') {
     require_method('POST');

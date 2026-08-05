@@ -120,6 +120,50 @@ function require_login()
     return $user;
 }
 
+/**
+ * Build a Haversine "distance from point" expression for near-me searches.
+ *
+ * Reads lat/lng/radius from the query string. Returns:
+ *   has    — whether valid lat/lng was supplied
+ *   select — expression AS distance_km ('' when absent)
+ *   where  — expression <= radius ('' when absent)
+ *   radius — the radius in km used (for the frontend)
+ *
+ * Values are validated numerically and embedded via sprintf('%.6F') —
+ * a sanitized float cannot carry SQL, so no parameter binding is needed
+ * and the same expression can appear in both SELECT and WHERE.
+ */
+function distance_clause($alias)
+{
+    if (!isset($_GET['lat'], $_GET['lng'])) {
+        return ['has' => false, 'select' => '', 'where' => '', 'radius' => null];
+    }
+    if (!is_numeric($_GET['lat']) || !is_numeric($_GET['lng'])) {
+        return ['has' => false, 'select' => '', 'where' => '', 'radius' => null];
+    }
+    $lat = (float)$_GET['lat'];
+    $lng = (float)$_GET['lng'];
+    if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+        return ['has' => false, 'select' => '', 'where' => '', 'radius' => null];
+    }
+    $latF = sprintf('%.6F', $lat);
+    $lngF = sprintf('%.6F', $lng);
+    $radius = isset($_GET['radius']) && is_numeric($_GET['radius'])
+        ? max(1.0, min(200.0, (float)$_GET['radius']))
+        : 50.0;
+
+    $expr = '(6371 * ACOS(LEAST(1, COS(RADIANS(' . $latF . ')) * COS(RADIANS(' . $alias . '.latitude))'
+        . ' * COS(RADIANS(' . $alias . '.longitude) - RADIANS(' . $lngF . '))'
+        . ' + SIN(RADIANS(' . $latF . ')) * SIN(RADIANS(' . $alias . '.latitude)))))';
+
+    return [
+        'has' => true,
+        'select' => $expr . ' AS distance_km',
+        'where' => $expr . ' <= ' . sprintf('%.1F', $radius),
+        'radius' => $radius,
+    ];
+}
+
 /** Require a valid CSRF token (header X-CSRF-Token) for state-changing calls */
 function require_csrf()
 {

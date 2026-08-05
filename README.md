@@ -25,6 +25,8 @@ A Yelp-style directory for the Muslim community — **halal businesses, mosques 
 │   ├── js/
 │   │   ├── app.js               # API client, auth state, layout, card renderers
 │   │   ├── mock.js              # sample data used only when the API is offline
+│   │   ├── map.js               # Leaflet helpers (detail maps, results maps, Near-me)
+│   │   ├── share.js             # Web Share API + share modal (WhatsApp/X/FB/Email/copy)
 │   │   └── pages/*.js           # one script per page
 │   └── img/                     # favicon + sample placeholder images
 ├── api/
@@ -57,12 +59,32 @@ A Yelp-style directory for the Muslim community — **halal businesses, mosques 
 5. **Delete `database/install.php` (and `database/install.lock`) from the server.**
 6. Done. Open your domain — the frontend will talk to `/api/*` automatically.
 
-The installer creates the schema, loads sample data (30 businesses, 14 mosques, 11 fundis, 30+ reviews with owner responses, photo galleries, check-ins, emergency numbers, ads) and creates demo accounts:
+The installer creates the schema, loads sample data (30 businesses, 14 mosques, 11 fundis, 30+ reviews with owner responses, photo galleries, check-ins, emergency numbers, ads) and creates demo accounts (all pre-verified, so email confirmation isn't needed for them):
 
 | Role | Login | Password |
 |---|---|---|
 | Admin | `admin@example.com` | `Admin@123` |
 | User | `demo@example.com` | `Demo@123` |
+
+### Sign in with Google (optional)
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) → *APIs & Services → Credentials → Create OAuth client ID* → **Web application**.
+2. Add an **Authorized redirect URI** exactly: `https://yourdomain.com/api/oauth.php?action=callback`
+3. Paste the client ID + secret into `config/config.php` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`).
+4. **Set `APP_URL` explicitly in `config/config.php`** (e.g. `https://yourdomain.com`) — the redirect URI is built from it and Google requires an exact string match (protocol + host, no trailing slash). If the site is behind a proxy/Cloudflare, auto-detection may pick up the wrong scheme/host and Google will reject the callback.
+5. A **"Continue with Google"** button appears on the login and register pages. First-time Google users get an account created automatically with their email pre-verified; users with an existing email/password account are linked on first Google login.
+6. Without keys the site runs in **demo mode** — the button returns a simulated link so the UI is still testable.
+
+### Email verification
+
+- New registrations receive a one-time confirmation link (24h expiry). Accounts stay usable (soft gate) but show a **"Confirm email"** banner and a `verify.html` page for resending.
+- Relies on the same `mail()` transport as password reset — make sure `SMTP_FROM_EMAIL` in `config/config.php` is a real, verifiable address (SPF/DKIM configured) so the emails aren't flagged as spam.
+- In `APP_ENV=development` the confirmation link is returned in the API response so the flow can be tested without SMTP.
+
+### Map & Near me
+
+- Maps use **Leaflet + OpenStreetMap** — no API key required. List/Map toggles on businesses, mosques and fundis; detail pages have embedded maps.
+- The **"📍 Near me"** button uses the browser Geolocation API (HTTPS required — `.htaccess` already allows it via `Permissions-Policy: geolocation=(self)`), then searches with `lat/lng/radius` and sorts by `distance_km`.
 
 ## Local preview without PHP
 
@@ -80,8 +102,12 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/auth.php?action=me` | GET | current user (or `data: null`) |
 | `api/auth.php?action=forgot` | POST | `{email}` — sends reset link (returns token in dev mode) |
 | `api/auth.php?action=reset` | POST | `{token, password}` — sets new password |
+| `api/auth.php?action=verify` | POST | `{token}` — confirm email from the one-time link |
+| `api/auth.php?action=resend_verification` | POST | `{email}` — resend confirmation (rate-limited) |
+| `api/oauth.php?action=login&provider=google` | GET | redirects to Google (or returns a simulated link in dev mode) |
+| `api/oauth.php?action=callback&provider=google` | GET | OAuth callback → logs in / creates account → `dashboard.html` |
 | `api/csrf.php` | GET | `{csrf_token}` — send as `X-CSRF-Token` header |
-| `api/businesses.php` | GET | `?q=&location=&category=&price=&min_rating=&sort=&page=` |
+| `api/businesses.php` | GET | `?q=&location=&category=&price=&min_rating=&sort=&page=&lat=&lng=&radius=` — `lat/lng/radius` (km) enable **Near me**: `distance_km` is returned per row and `sort=distance` orders by it (same on `api/mosques.php` + `api/fundis.php`) |
 | `api/businesses.php?id=N` | GET | detail + photos + reviews + similar |
 | `api/businesses.php?featured=1` | GET | homepage set |
 | `api/mosques.php` / `?id=N` / `?top=1` | GET | list / detail (+prayer times) |

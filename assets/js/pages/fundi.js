@@ -13,6 +13,11 @@ window.appReady.then(async () => {
 
   try {
     const { fundi, portfolio, reviews } = await api('api/fundis.php?id=' + id);
+    if (window.setOgMeta) setOgMeta({
+      title: fundi.full_name,
+      description: (fundi.profession || 'Fundi') + (fundi.city ? ' — ' + fundi.city : ''),
+      image: fundi.profile_photo || '',
+    });
     render(fundi, portfolio, reviews);
     loadSponsoredSide();
     initDetailMap('fundiMap', fundi.latitude, fundi.longitude, fundi.full_name, 'fundi.html?id=' + fundi.id);
@@ -96,6 +101,7 @@ window.appReady.then(async () => {
           ${f.phone ? `<a class="btn btn-primary" href="tel:${esc(f.phone)}">${icon('phone', 14)} Call</a>` : ''}
           ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
           <button class="btn btn-primary" id="quoteBtnTop">${icon('pen', 14)} Request a quote</button>
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(f.full_name)}" data-share-url="fundi.html?id=${f.id}" data-share-text="${esc(f.profession || f.full_name)}">${icon('share', 14)} Share</button>
           ${f.hourly_rate_min ? `<a class="btn btn-ghost">${icon('clock', 14)} ${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}/hr</a>` : ''}
         </div>
       </div>

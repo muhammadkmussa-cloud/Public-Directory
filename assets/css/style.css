@@ -534,6 +534,53 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.01em; color: var(--text); 
 .view-btn + .view-btn { border-left: 1px solid var(--border-2); }
 .view-btn.active { background: var(--red); color: #fff; }
 
+/* "Near me" geolocation button (results bar) */
+#nearMeBtn.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* "Confirm email" pill in the user nav */
+.verify-pill {
+  font-size: 0.78rem; font-weight: 700; color: #b3541e !important;
+  background: #fdf1e7; border: 1px solid #f3cba8; border-radius: 20px; padding: 0.25rem 0.7rem;
+}
+.verify-pill:hover { background: #fbe6d3; }
+
+/* Google sign-in button + divider */
+.btn-google {
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  background: #fff; color: var(--text); border: 1.5px solid var(--border-2);
+  border-radius: 6px; padding: 0.7rem 1rem; font: inherit; font-weight: 600;
+  cursor: pointer; box-shadow: var(--shadow-sm); transition: box-shadow 0.12s ease, background 0.12s ease;
+}
+.btn-google:hover { box-shadow: var(--shadow); background: #fafafa; }
+.auth-divider {
+  display: flex; align-items: center; gap: 0.8rem; margin: 1rem 0;
+  color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* verify.html success state */
+.verify-status { text-align: center; padding: 1rem 0 0.5rem; }
+.verify-check {
+  width: 56px; height: 56px; margin: 0 auto 0.8rem; border-radius: 50%;
+  background: #eaf6ea; color: #1d5c1d; font-size: 1.6rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* blue-dot marker for the user's location on the map */
+.user-dot-wrap { background: transparent; border: 0; }
+.user-dot {
+  display: block; width: 16px; height: 16px; border-radius: 50%;
+  background: #1a73e8; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.user-dot::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%;
+  background: rgba(26, 115, 232, 0.25); animation: user-pulse 2s ease-out infinite;
+}
+@keyframes user-pulse {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
 /* save (bookmark) buttons */
 .save-btn {
   position: absolute; top: 10px; right: 10px; z-index: 2;
@@ -546,6 +593,42 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.01em; color: var(--text); 
 .save-btn:hover { transform: scale(1.08); color: var(--red); }
 .save-btn.saved { color: var(--red); background: #fff; }
 .detail-actions .save-btn { position: static; width: auto; height: auto; border-radius: 4px; padding: 0.55rem 1.1rem; box-shadow: none; }
+
+/* share (button on cards, sits beside the bookmark) */
+.share-btn {
+  position: absolute; top: 10px; right: 50px; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease, color 0.1s ease, background 0.1s ease;
+}
+.share-btn:hover { transform: scale(1.08); color: var(--red); }
+.result-actions .share-btn { position: static; width: auto; height: auto; border-radius: 4px; padding: 0; box-shadow: none; }
+
+/* distance badge on result cards */
+.distance-badge {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  font-size: 0.78rem; font-weight: 700; color: var(--red);
+  background: rgba(211, 35, 35, 0.08); border-radius: 20px; padding: 0.1rem 0.55rem;
+  margin-left: 0.4rem; white-space: nowrap;
+}
+
+/* share modal */
+.share-targets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin-bottom: 1rem; }
+.share-target {
+  display: flex; align-items: center; gap: 0.6rem;
+  border: 1.5px solid var(--border); border-radius: 10px; padding: 0.7rem 0.9rem;
+  color: var(--text); font-weight: 600; font-size: 0.9rem;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.share-target:hover { border-color: var(--red); color: var(--red); box-shadow: var(--shadow-sm); }
+.share-copy { display: flex; gap: 0.5rem; }
+.share-copy input {
+  flex: 1; min-width: 0; padding: 0.6rem 0.8rem; font: inherit; font-size: 0.85rem;
+  border: 1.5px solid var(--border); border-radius: 8px; outline: none; color: var(--text-2);
+}
+.share-copy input:focus { border-color: var(--red); }
 
 /* review photos */
 .review-photos { display: flex; gap: 0.5rem; margin: 0.7rem 0 0.2rem; flex-wrap: wrap; }

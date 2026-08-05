@@ -45,11 +45,11 @@
 | Search by keyword + location | ✅ | ✅ | No autocomplete/suggestions yet |
 | Search by category | ✅ | ✅ | Via category chips + filter |
 | Filters: price, rating, open-now, distance, hours | ✅ | 🟡 | Price ✅, rating ✅, **open-now filter exists but isn't applied in the API**, distance ❌, hours ❌ |
-| Sort: rating, review count, name, distance | ✅ | 🟡 | rating/reviews/name ✅, distance ❌ |
+| Sort: rating, review count, name, distance | ✅ | ✅ | Sort by rating/reviews/name/distance; "Near me" button (geolocation) + radius filter on businesses/mosques/fundis; distance badges on cards | |
 | Pagination | ✅ | ✅ | ✅ |
 | Business detail: hours, contact, price, website | ✅ | ✅ | ✅ |
 | Green "Open / Closed" computed from hours | ✅ | 🟡 | Uses a static `is_open` flag, not computed from `opening_hours` |
-| Directions / map | ✅ interactive | 🟡 link only | ❌ |
+| Directions / map | ✅ interactive | ✅ Leaflet + OSM on businesses/mosques/fundis (list + detail), List/Map toggle, "Near me" pin | |
 | Photo galleries (multiple, primary) | ✅ | ✅ | No upload or lightbox |
 | Amenities & attributes | ✅ | ✅ | `amenities` JSON |
 | Similar businesses | ✅ | ✅ | Same category |
@@ -57,8 +57,8 @@
 | Useful / Funny / Cool reactions | ✅ | ✅ | Toggle + counts, matches Yelp |
 | Review photos | ✅ | ❌ | API for upload exists (`api/upload.php` was removed — needs re-adding); no review photo UI |
 | Check-in | ✅ | ✅ | Daily cooldown; Yelp adds check-in photos + badges |
-| Save / bookmark / collections | ✅ | ❌ | Schema has `favorites`; no UI, no API |
-| Share listing | ✅ | ❌ | |
+| Save / bookmark / collections | ✅ | ✅ | Save buttons + "Saved" on profile |
+| Share listing | ✅ | ✅ | Web Share API + fallback modal (WhatsApp/X/Facebook/Email/copy), OG tags | |
 | Report review / listing | ✅ | ❌ | Schema has `reports`; no UI/API |
 | Owner response to reviews | ✅ | 🟡 | Displayed if present; no UI for owners to write |
 | Business claiming | ✅ | ❌ | Schema has `is_claimed`; no flow |
@@ -76,8 +76,8 @@
 |---|---|---|---|
 | Register / login / logout | ✅ | ✅ | Sessions + CSRF |
 | Password reset | ✅ | ❌ | `Auth::requestPasswordReset()` removed in rebuild; no page/API |
-| Email verification | ✅ | ❌ | |
-| Social / OAuth login | ✅ | ❌ | |
+| Email verification | ✅ | ✅ | One-time link on register (`email_verifications` table), `verify.html`, resend flow, banner for unverified users; seed users stay verified |
+| Social / OAuth login | ✅ | ✅ | Google via server-side OAuth (`api/oauth.php`, `oauth_links` table); "Continue with Google" on login/register; dev-mode simulated flow | |
 | Profile: stats, avatar | ✅ | ✅ | Stats ✅, avatar stored but no upload UI |
 | My reviews | ✅ | ✅ | ✅ |
 | My photos / check-ins / saved | ✅ | ❌ | |
@@ -129,6 +129,13 @@
 3. ✅ **Review photos** — secure `api/upload.php` + file input in review modal
 4. ✅ **Open-now filter** — computed live from `opening_hours`
 5. ✅ **Password reset** — forgot/reset pages + API
+
+**Tier 1b — ✅ DONE (2026-08-05, Yelp-parity critical gaps):**
+1. ✅ **Map everywhere** — List/Map toggle on mosques & fundis listing pages too (shared `wireResultsMapToggle` helper); user-location pin
+2. ✅ **Distance search** — `lat/lng/radius` + Haversine in the API, `sort=distance`, "📍 Near me" button + radius filter, km badges on cards
+3. ✅ **Email verification** — one-time link on register, `verify.html`, resend, unverified banner (soft-gated login)
+4. ✅ **Google OAuth** — "Continue with Google" on login/register, `oauth_links` linking, dev-mode simulated flow
+5. ✅ **Share** — Web Share API + fallback modal (WhatsApp/X/Facebook/Email/copy-link), OG meta tags on all pages
 
 **Tier 2 — ✅ DONE (2026-08-05):**
 6. ✅ **Owner dashboard** — claim, edit, respond to reviews, pending counts + stats

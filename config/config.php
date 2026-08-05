@@ -37,9 +37,20 @@ define('HASH_COST', 10);                    // bcrypt cost
 define('SESSION_LIFETIME', 60 * 60 * 24);   // 24 hours (seconds)
 define('CSRF_TOKEN_NAME', 'csrf_token');
 
-// ---- Mail (used for the password-reset "From:" header) --------------------
+// ---- Mail (used for the password-reset + email-verification "From:" header) --
 define('SMTP_FROM_NAME', 'Umma Directory');          // sender display name
 define('SMTP_FROM_EMAIL', 'no-reply@yourdomain.com'); // sender address
+
+// ---- Google OAuth (Sign in with Google) -----------------------------------
+// Create credentials at console.cloud.google.com → APIs & Services → Credentials
+// → OAuth client ID (Web application). Add an authorized redirect URI of exactly:
+//   https://yourdomain.com/api/oauth.php?action=callback
+// Leave the keys empty to run in dev/demo mode (oauth.php returns a simulated
+// link so the UI is testable without Google credentials).
+define('GOOGLE_CLIENT_ID', '');
+define('GOOGLE_CLIENT_SECRET', '');
+define('GOOGLE_REDIRECT_URI', (APP_URL ?: '') . '/api/oauth.php?action=callback');
+define('OAUTH_STATE_LIFETIME', 600);                // seconds
 
 // ---- File uploads ---------------------------------------------------------
 define('MAX_FILE_SIZE', 5 * 1024 * 1024);   // 5MB

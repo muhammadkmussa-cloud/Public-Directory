@@ -13,6 +13,11 @@ window.appReady.then(async () => {
 
   try {
     const { mosque, photos, reviews, prayer } = await api('api/mosques.php?id=' + id);
+    if (window.setOgMeta) setOgMeta({
+      title: mosque.name,
+      description: (mosque.address || mosque.name) + (mosque.city ? ', ' + mosque.city : ''),
+      image: photos && photos[0] ? photos[0].photo_path : '',
+    });
     render(mosque, photos, reviews, prayer);
     loadSponsoredSide();
     initDetailMap('mosqueMap', mosque.latitude, mosque.longitude, mosque.name, 'mosque.html?id=' + mosque.id);
@@ -119,6 +124,7 @@ window.appReady.then(async () => {
           ${m.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
           <button class="btn btn-ghost save-btn" data-save-type="mosque" data-save-id="${m.id}">${icon('bookmark', 14)} Save</button>
           <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(m.name)}" data-share-url="mosque.html?id=${m.id}" data-share-text="${esc(m.address || m.name)}">${icon('share', 14)} Share</button>
           <button class="btn btn-outline" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
         </div>
       </div>

@@ -27,6 +27,11 @@ window.appReady.then(async () => {
 
   try {
     const { charity, raised, donors, campaigns } = await api('api/charities.php?id=' + id);
+    if (window.setOgMeta) setOgMeta({
+      title: charity.name,
+      description: (charity.description || charity.category || '').replace(/<[^>]+>/g, ''),
+      image: charity.logo_path || charity.cover_photo || '',
+    });
     render(charity, raised, donors, campaigns);
 
     // amount quick buttons
@@ -108,6 +113,7 @@ window.appReady.then(async () => {
           ${c.phone ? `<a class="btn btn-primary" href="tel:${esc(c.phone)}">${icon('phone', 14)} Call</a>` : ''}
           ${c.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(c.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
           ${c.website ? `<a class="btn btn-outline" href="${esc(c.website)}" target="_blank" rel="noopener">${icon('globe', 14)} Website</a>` : ''}
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(c.name)}" data-share-url="charity.html?id=${c.id}" data-share-text="${esc(c.description || c.name)}">${icon('share', 14)} Share</button>
           <button class="btn btn-primary" id="donateTopBtn">${icon('heart', 14)} Donate</button>
         </div>
       </div>

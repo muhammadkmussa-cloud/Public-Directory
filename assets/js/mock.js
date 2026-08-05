@@ -109,6 +109,24 @@ window.mockApi = (function () {
     return { name: 'Asr', time: '15:45', remaining_minutes: 90 };
   }
 
+  /* ---------- distance (Near me) helpers — mirror the PHP Haversine ---------- */
+  function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+      + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+  function withDistance(list, lat, lng, radius) {
+    return list
+      .filter(it => it.latitude && it.longitude)
+      .map(it => ({ ...it, distance_km: haversineKm(lat, lng, it.latitude, it.longitude) }))
+      .filter(it => it.distance_km <= radius)
+      .sort((a, b) => a.distance_km - b.distance_km);
+  }
+
   /* ---------- route mock requests ---------- */
   function handle(path, opts) {
     const method = (opts && opts.method) || 'GET';
@@ -116,6 +134,21 @@ window.mockApi = (function () {
     const action = url.searchParams.get('action');
 
     if (path.startsWith('api/csrf.php')) return { csrf_token: 'mock-csrf-token' };
+
+    if (path.startsWith('api/oauth.php')) {
+      if (action === 'login') {
+        return { mode: 'demo', message: 'Simulated Google sign-in (demo mode)', login_url: 'api/oauth.php?action=callback&provider=google&code=mock-oauth-code&state=mock-state' };
+      }
+      if (action === 'callback') {
+        if (url.searchParams.get('code') !== 'mock-oauth-code') throw Object.assign(new Error('Could not exchange the authorization code with Google'), { status: 502 });
+        mockUser = {
+          id: 100, username: 'oauth_user', email: 'oauth.demo@example.com', full_name: 'OAuth Demo User',
+          user_type: 'regular', profile_photo: '', total_reviews: 0, total_checkins: 0,
+          email_verified: true,
+        };
+        return { ok: true, user: mockUser, redirect: 'dashboard.html' };
+      }
+    }
 
     if (path.startsWith('api/auth.php')) {
       if (action === 'me') return mockUser;
@@ -138,7 +171,18 @@ window.mockApi = (function () {
       }
       if (action === 'register') {
         mockUser = { id: 99, username: parseBody(opts).username, email: parseBody(opts).email, full_name: parseBody(opts).full_name || parseBody(opts).username, user_type: 'regular', profile_photo: '', total_reviews: 0, total_checkins: 0 };
+        mockUser.email_verified = false;
+        mockUser.verification_link = 'verify.html?token=mock-verify-token-1234567890abcdef';
         return mockUser;
+      }
+      if (action === 'verify') {
+        const b = parseBody(opts);
+        if (b.token !== 'mock-verify-token-1234567890abcdef') throw Object.assign(new Error('This verification link is invalid or has expired. Request a new one.'), { status: 422 });
+        if (mockUser) mockUser.email_verified = true;
+        return { ok: true, user_id: mockUser ? mockUser.id : 99 };
+      }
+      if (action === 'resend_verification') {
+        return { ok: true, message: 'Confirmation link sent', verification_link: 'verify.html?token=mock-verify-token-1234567890abcdef' };
       }
       if (action === 'forgot') {
         return { ok: true, message: 'Reset link generated', reset_token: 'mock-reset-token-1234567890abcdef', reset_link: 'reset.html?token=mock-reset-token-1234567890abcdef' };
@@ -164,7 +208,14 @@ window.mockApi = (function () {
         return { business: b, photos: [{ id: 1, photo_path: b.primary_photo || '', thumbnail_path: '', caption: '', is_primary: 1 }], reviews: REVIEWS, rating_breakdown: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 }, similar: BUSINESSES.filter(x => x.id !== b.id).slice(0, 3) };
       }
       if (url.searchParams.has('featured')) return BUSINESSES.filter(b => b.is_verified).slice(0, 6);
-      return { items: BUSINESSES, total: BUSINESSES.length, page: 1, pages: 1, categories: CATEGORIES, cities: CITIES.map(c => ({ city: c, total: 2 })) };
+      let biz = BUSINESSES;
+      if (url.searchParams.has('lat') && url.searchParams.has('lng')) {
+        const lat = parseFloat(url.searchParams.get('lat'));
+        const lng = parseFloat(url.searchParams.get('lng'));
+        const radius = parseFloat(url.searchParams.get('radius') || '50') || 50;
+        biz = withDistance(biz, lat, lng, radius);
+      }
+      return { items: biz, total: biz.length, page: 1, pages: 1, categories: CATEGORIES, cities: CITIES.map(c => ({ city: c, total: 2 })) };
     }
 
     if (path.startsWith('api/categories.php')) return CATEGORIES;
@@ -175,7 +226,14 @@ window.mockApi = (function () {
         return { mosque: m, photos: [{ id: 1, photo_path: m.primary_photo || '', caption: '' }], reviews: m.id === 4 ? [] : REVIEWS.slice(0, 1), prayer: { today: prayerTimes(m.latitude), next: nextPrayer(), week: [1, 2, 3, 4, 5, 6, 7].map(i => ({ date: '', day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i - 1], times: prayerTimes(m.latitude) })) } };
       }
       if (url.searchParams.has('top')) return MOSQUES.slice(0, 4).map(m => ({ ...m, next_prayer: nextPrayer() }));
-      return { items: MOSQUES.map(m => ({ ...m, prayer_times: prayerTimes(m.latitude), next_prayer: nextPrayer() })), total: MOSQUES.length, page: 1, pages: 1, cities: CITIES.map(c => ({ city: c, total: 1 })) };
+      let mosques = MOSQUES.map(m => ({ ...m, prayer_times: prayerTimes(m.latitude), next_prayer: nextPrayer() }));
+      if (url.searchParams.has('lat') && url.searchParams.has('lng')) {
+        const lat = parseFloat(url.searchParams.get('lat'));
+        const lng = parseFloat(url.searchParams.get('lng'));
+        const radius = parseFloat(url.searchParams.get('radius') || '50') || 50;
+        mosques = withDistance(mosques, lat, lng, radius);
+      }
+      return { items: mosques, total: mosques.length, page: 1, pages: 1, cities: CITIES.map(c => ({ city: c, total: 1 })) };
     }
 
     if (path.startsWith('api/fundis.php')) {
@@ -184,7 +242,14 @@ window.mockApi = (function () {
         return { fundi: f, portfolio: PORTFOLIO[f.id] || [], reviews: f.id === 3 ? REVIEWS.slice(1, 2) : REVIEWS.slice(0, 1) };
       }
       if (url.searchParams.has('top')) return FUNDIS.slice(0, 3);
-      return { items: FUNDIS, total: FUNDIS.length, page: 1, pages: 1, skills: ['Plumbing', 'Tailoring', 'Electrician', 'Carpentry'], cities: CITIES.map(c => ({ city: c, total: 1 })) };
+      let fundis = FUNDIS;
+      if (url.searchParams.has('lat') && url.searchParams.has('lng')) {
+        const lat = parseFloat(url.searchParams.get('lat'));
+        const lng = parseFloat(url.searchParams.get('lng'));
+        const radius = parseFloat(url.searchParams.get('radius') || '50') || 50;
+        fundis = withDistance(fundis, lat, lng, radius);
+      }
+      return { items: fundis, total: fundis.length, page: 1, pages: 1, skills: ['Plumbing', 'Tailoring', 'Electrician', 'Carpentry'], cities: CITIES.map(c => ({ city: c, total: 1 })) };
     }
 
     if (path.startsWith('api/reviews.php')) {
