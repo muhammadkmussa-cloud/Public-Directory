@@ -154,6 +154,17 @@ function fmtMoney(amount) {
   return 'KSh ' + Number(amount).toLocaleString('en-KE');
 }
 
+/**
+ * Normalize a phone number to the international format wa.me expects.
+ * 07XXXXXXXX → 2547XXXXXXXX, 7XXXXXXXX → 2547XXXXXXXX, else as-is.
+ */
+function waNumber(raw) {
+  const digits = String(raw || '').replace(/[^0-9]/g, '');
+  if (digits.length === 9) return '254' + digits;
+  if (digits.length === 10 && digits[0] === '0') return '254' + digits.slice(1);
+  return digits || '';
+}
+
 let toastTimer = null;
 function toast(msg, type = 'success') {
   let box = document.querySelector('.toast-box');
@@ -651,7 +662,7 @@ function fundiCard(f) {
       <p class="result-snippet">${esc(f.bio || '')}</p>
       <div class="result-actions">
         ${f.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(f.phone)}">${icon('phone', 13)} Call</a>` : ''}
-        ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 13)} WhatsApp</a>` : ''}
+        ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 13)} WhatsApp</a>` : ''}
         <span class="result-loc">${icon('pin', 12)} ${esc(f.city || '')}${f.hourly_rate_min ? ' · ' + fmtMoney(f.hourly_rate_min) + '/hr' : ''}</span>
       </div>
     </div>
@@ -860,7 +871,7 @@ function sponsoredMini(ad) {
 /** Fire-and-forget impression beacon */
 function recordAdImpression(adId) {
   if (!adId) return;
-  api('api/ads.php', { method: 'POST', body: { action: 'impression', ad_id: adId } }).catch(() => {});
+  api('api/ads.php?action=impression', { method: 'POST', body: { ad_id: adId } }).catch(() => {});
 }
 
 /** Fill a #sponsoredSide container on detail pages */
@@ -1092,7 +1103,7 @@ document.addEventListener('click', async (e) => {
 document.addEventListener('click', (e) => {
   const link = e.target.closest('[data-ad-click]');
   if (!link) return;
-  api('api/ads.php', { method: 'POST', body: { action: 'click', ad_id: link.dataset.adClick } }).catch(() => {});
+  api('api/ads.php?action=click', { method: 'POST', body: { ad_id: link.dataset.adClick } }).catch(() => {});
 });
 
 /* ============================================================

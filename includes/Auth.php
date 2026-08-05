@@ -9,6 +9,8 @@ require_once __DIR__ . '/Database.php';
 class Auth
 {
     private static $db;
+    private static $currentUser = null;
+    private static $currentUserLoaded = false;
 
     private static function db()
     {
@@ -103,17 +105,51 @@ class Auth
 
         session_regenerate_id(true);
 
-        $_SESSION['user_id']  = (int)$user['id'];
-        $_SESSION['logged_in'] = true;
+        // Issue a session token recorded in user_sessions so that we can revoke
+        // a user's other sessions (e.g. on password reset).
+        $token = bin2hex(random_bytes(32));
+        try {
+            self::db()->insert(
+                'INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
+                 VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ' . (int)SESSION_LIFETIME . ' SECOND))',
+                [(int)$user['id'], $token, $_SERVER['REMOTE_ADDR'] ?? null, substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)]
+            );
+        } catch (Throwable $e) {
+            // user_sessions table may be missing on older installs — proceed
+            // without token-based revocation rather than breaking login.
+            $token = '';
+            error_log('Auth::login user_sessions insert failed: ' . $e->getMessage());
+        }
+
+        $_SESSION['user_id']       = (int)$user['id'];
+        $_SESSION['logged_in']     = true;
+        $_SESSION['umdir_auth_token'] = $token;
 
         self::db()->execute('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
+
+        // Invalidate any cached user from earlier in this request (e.g. register → login).
+        self::$currentUser = null;
+        self::$currentUserLoaded = false;
 
         return ['ok' => true, 'user' => self::currentUser()];
     }
 
     public static function logout()
     {
+        // Remove the session's DB token so the session is truly revoked.
+        if (!empty($_SESSION['user_id']) && !empty($_SESSION['umdir_auth_token'])) {
+            try {
+                self::db()->execute(
+                    'DELETE FROM user_sessions WHERE user_id = ? AND session_token = ?',
+                    [(int)$_SESSION['user_id'], $_SESSION['umdir_auth_token']]
+                );
+            } catch (Throwable $e) {
+                // user_sessions may be missing on older installs — ignore.
+            }
+        }
         $_SESSION = [];
+        self::$currentUser = null;
+        self::$currentUserLoaded = false;
         if (ini_get('session.use_cookies')) {
             $p = session_get_cookie_params();
             setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
@@ -132,17 +168,50 @@ class Auth
     /** Full user row (without password hash) or null */
     public static function currentUser()
     {
+        if (self::$currentUserLoaded) {
+            return self::$currentUser;
+        }
+        self::$currentUserLoaded = true;
+
         if (!self::isLoggedIn()) {
+            self::$currentUser = null;
             return null;
         }
-        $user = self::db()->fetchOne(
+        // Validate this session's token against user_sessions. If it has been
+        // revoked (e.g. the password was reset elsewhere) or has expired, log out.
+        $token = $_SESSION['umdir_auth_token'] ?? '';
+        if ($token === '' || !self::sessionValid((int)$_SESSION['user_id'], $token)) {
+            self::logout();
+            self::$currentUser = null;
+            return null;
+        }
+        self::$currentUser = self::db()->fetchOne(
             'SELECT id, username, email, full_name, phone, profile_photo, user_type,
                     is_verified, verification_badge, contributor_level, total_reviews,
                     total_checkins, total_photos, helpful_votes, created_at, last_login
              FROM users WHERE id = ?',
             [$_SESSION['user_id']]
         );
-        return $user ?: null;
+        return self::$currentUser;
+    }
+
+    /**
+     * Whether a session token is still valid for a user.
+     * On old installs without a user_sessions table this returns true so the
+     * site keeps working (token-based revocation simply isn't available).
+     */
+    private static function sessionValid($userId, $token)
+    {
+        try {
+            return (bool)self::db()->fetchOne(
+                'SELECT 1 FROM user_sessions
+                  WHERE user_id = ? AND session_token = ? AND expires_at > NOW()',
+                [$userId, $token]
+            );
+        } catch (Throwable $e) {
+            error_log('Auth::sessionValid failed: ' . $e->getMessage());
+            return true;
+        }
     }
 
     /** Convenience aliases (match the names used by the old frontend) */
@@ -236,8 +305,13 @@ class Auth
         $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => HASH_COST]);
         self::db()->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$hash, $reset['user_id']]);
         self::db()->execute('UPDATE password_resets SET used = 1 WHERE id = ?', [$reset['id']]);
-        // invalidate all existing sessions for this user
-        self::db()->execute('DELETE FROM user_sessions WHERE user_id = ?', [$reset['user_id']]);
+        // invalidate all existing sessions for this user (user_sessions is the
+        // source of truth for token validity, so deleting rows revokes sessions)
+        try {
+            self::db()->execute('DELETE FROM user_sessions WHERE user_id = ?', [$reset['user_id']]);
+        } catch (Throwable $e) {
+            error_log('Auth::resetPassword user_sessions cleanup failed: ' . $e->getMessage());
+        }
 
         return ['ok' => true, 'message' => 'Password reset successfully — you can now login'];
     }

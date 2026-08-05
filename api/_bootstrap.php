@@ -37,30 +37,47 @@ if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
 }
 header('Cache-Control: no-store, private'); // API responses are never cached
 
-// ---- Rate limiting (simple in-memory token bucket per IP) ------------------
-// Note: on shared hosting, PHP-FPM resets the process pool, so this is a
-// best-effort throttle rather than a hard guarantee. For hard limits use
-// mod_evasive / Cloudflare.
+// ---- Rate limiting (per-IP token bucket stored on disk) --------------------
+// Counters live outside the session so clearing cookies can't bypass limits.
+// Note: on shared hosting the throttling is still best-effort (files are fast,
+// but not atomic under heavy concurrency); for hard guarantees use mod_evasive
+// or a WAF (e.g. Cloudflare).
 function rate_limit($key, $max = 60, $window = 60)
 {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $now = time();
-    $bucket = $key . ':' . $ip;
-    if (!isset($_SESSION['rl'][$bucket])) {
-        $_SESSION['rl'][$bucket] = ['count' => 0, 'reset' => $now + $window];
+    $dir = rtrim(sys_get_temp_dir(), '/') . '/umdir_rl';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
     }
-    $b = &$_SESSION['rl'][$bucket];
-    if ($b['reset'] <= $now) {
-        $b = ['count' => 0, 'reset' => $now + $window];
+    $file = $dir . '/' . $key . '_' . md5($ip) . '.json';
+
+    $data = ['count' => 0, 'reset' => $now + $window];
+    if (is_file($file)) {
+        $raw = @file_get_contents($file);
+        $decoded = $raw ? json_decode($raw, true) : null;
+        if (is_array($decoded) && isset($decoded['count'], $decoded['reset'])) {
+            $data = $decoded;
+        }
     }
-    $b['count']++;
-    // prune old buckets to keep session small
-    if (count($_SESSION['rl']) > 50) {
-        $_SESSION['rl'] = array_filter($_SESSION['rl'], function ($v) use ($now) {
-            return $v['reset'] > $now;
-        });
+    if ($data['reset'] <= $now) {
+        $data = ['count' => 0, 'reset' => $now + $window];
     }
-    if ($b['count'] > $max) {
+    $data['count']++;
+    @file_put_contents($file, json_encode($data), LOCK_EX);
+
+    // Occasionally prune expired buckets so the temp dir doesn't grow unbounded.
+    if (mt_rand(1, 100) === 1) {
+        foreach ((array)glob($dir . '/*.json') as $f) {
+            $j = @file_get_contents($f);
+            $d = $j ? json_decode($j, true) : null;
+            if (!is_array($d) || !isset($d['reset']) || $d['reset'] <= $now) {
+                @unlink($f);
+            }
+        }
+    }
+
+    if ($data['count'] > $max) {
         json_err('Too many requests — please slow down', 429);
     }
 }

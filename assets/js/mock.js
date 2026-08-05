@@ -240,15 +240,15 @@ window.mockApi = (function () {
         return { ads: ids.map(i => ADS.find(a => a.id === i)).filter(Boolean), placement: { location: placement, max_ads: 2 } };
       }
       const b = parseBody(opts);
-      if (b.action === 'impression') return { impressions: 1241 };
-      if (b.action === 'click') return { clicks: 87 };
-      if (b.action === 'create') {
+      if (action === 'impression') return { impressions: 1241 };
+      if (action === 'click') return { clicks: 87 };
+      if (action === 'create') {
         if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
         return { ad_id: 99 };
       }
-      if (b.action === 'toggle' || b.action === 'delete') {
+      if (action === 'toggle' || action === 'delete') {
         if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
-        return { status: b.status || 'paused', deleted: b.action === 'delete' };
+        return { status: b.status || 'paused', deleted: action === 'delete' };
       }
     }
 

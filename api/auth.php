@@ -78,6 +78,7 @@ if ($action === 'reset') {
 /* ---- logout ---- */
 if ($action === 'logout') {
     require_method('POST');
+    require_csrf();
     Auth::logout();
     json_ok(['logged_out' => true]);
 }
