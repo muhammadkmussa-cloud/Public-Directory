@@ -68,8 +68,8 @@ window.mockApi = (function () {
   ];
 
   const REVIEWS = [
-    { id: 1, rating: 5, title: 'Best biryani in Nairobi!', content: 'The chicken biryani is incredible and the family seating is very private and comfortable. Staff are so welcoming. Highly recommended for iftar too.', helpful_count: 12, created_at: new Date(Date.now() - 86400000 * 12).toISOString(), user: { full_name: 'Amina Hassan', profile_photo: '' } },
-    { id: 2, rating: 4, title: 'Great food, busy at peak hours', content: 'Delicious samosas and the mandazi are fresh all day. Gets crowded on Friday evenings - go early!', helpful_count: 5, created_at: new Date(Date.now() - 86400000 * 5).toISOString(), user: { full_name: 'Yusuf Omar', profile_photo: '' } },
+    { id: 1, rating: 5, title: 'Best biryani in Nairobi!', content: 'The chicken biryani is incredible and the family seating is very private and comfortable. Staff are so welcoming. Highly recommended for iftar too.', helpful_count: 12, useful_count: 12, funny_count: 4, cool_count: 2, created_at: new Date(Date.now() - 86400000 * 12).toISOString(), user: { full_name: 'Amina Hassan', profile_photo: '' } },
+    { id: 2, rating: 4, title: 'Great food, busy at peak hours', content: 'Delicious samosas and the mandazi are fresh all day. Gets crowded on Friday evenings - go early!', helpful_count: 5, useful_count: 5, funny_count: 8, cool_count: 1, created_at: new Date(Date.now() - 86400000 * 5).toISOString(), user: { full_name: 'Yusuf Omar', profile_photo: '' } },
   ];
 
   const CITIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Lamu'];
@@ -140,7 +140,10 @@ window.mockApi = (function () {
     if (path.startsWith('api/reviews.php')) {
       const b = parseBody(opts);
       if (b.action === 'create') return { review_id: 99 };
-      if (b.action === 'helpful') return { helpful_count: 13 };
+      if (b.action === 'react' || b.action === 'helpful') {
+        const reactions = mockUser ? ['useful'] : [];
+        return { counts: { useful: 13, funny: 8, cool: 3 }, user_reactions: reactions };
+      }
       if (b.action === 'delete') return { deleted: true };
     }
 

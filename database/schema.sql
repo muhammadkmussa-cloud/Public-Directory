@@ -343,16 +343,23 @@ CREATE TABLE `review_photos` (
   FOREIGN KEY (`review_id`) REFERENCES `reviews`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Review reactions: Useful / Funny / Cool (Yelp-style)
 CREATE TABLE `review_helpful` (
   `review_id` INT(11) UNSIGNED NOT NULL,
   `user_id` INT(11) UNSIGNED NOT NULL,
-  `is_helpful` TINYINT(1) NOT NULL,
+  `reaction_type` ENUM('useful', 'funny', 'cool') NOT NULL DEFAULT 'useful',
+  `is_helpful` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`review_id`, `user_id`),
+  PRIMARY KEY (`review_id`, `user_id`, `reaction_type`),
   KEY `user_id` (`user_id`),
   FOREIGN KEY (`review_id`) REFERENCES `reviews`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- NOTE: if upgrading an existing install, run:
+--   ALTER TABLE review_helpful
+--     ADD reaction_type ENUM('useful','funny','cool') NOT NULL DEFAULT 'useful' AFTER user_id,
+--     DROP PRIMARY KEY, ADD PRIMARY KEY (review_id, user_id, reaction_type);
 
 -- ============================================
 -- 7. PHOTOS & MEDIA

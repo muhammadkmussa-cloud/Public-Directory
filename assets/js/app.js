@@ -12,6 +12,46 @@ const USE_MOCK_FALLBACK = true; // show sample data when the PHP API is unreacha
 let mockMode = false;
 
 /* ============================================================
+ * SVG icon system (Yelp-style line icons)
+ * ============================================================ */
+const ICONS = {
+  spark: '<path fill="currentColor" stroke="none" d="M12 1.8c1 6 4.2 9.2 10.2 10.2-6 1-9.2 4.2-10.2 10.2C11 16.2 7.8 13 1.8 12 7.8 11 11 7.8 12 1.8z"/>',
+  search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  nav: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  wa: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.7-.3-3.9-.9L3 21l1.9-5.1A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 9.5c.3 2 1.5 3.2 3.5 3.5l1-1 1.5 1v1.5c0 .6-.5 1-1.1 1A7 7 0 0 1 8 10.1c0-.6.4-1.1 1-1.1h1.5l1 1z"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  pen: '<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  thumb: '<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.61l1.38-7a2 2 0 0 0-2-2.39H14z"/><path d="M7 21H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3"/>',
+  smile: '<circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.5 2.3 4 2.3 4-2.3 4-2.3"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/>',
+  cool: '<circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.5 2 4 2 4-2 4-2"/><rect x="6.8" y="9" width="3.2" height="1.6" rx="0.4"/><rect x="14" y="9" width="3.2" height="1.6" rx="0.4"/><line x1="10" y1="9.8" x2="14" y2="9.8"/>',
+  mosque: '<path d="M3 21h18"/><path d="M5 21v-5a7 7 0 0 1 14 0v5"/><path d="M12 9.5V7.5"/><path d="M9.6 7.5h4.8L12 3.8l-2.4 3.7z"/>',
+  wrench: '<path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9L3 18l3 3 5.8-5.8a4.5 4.5 0 0 0 5.9-5.9L14 13.5 10.5 10l4.2-3.7z"/>',
+  bag: '<path d="M6 8h12l-1.2 12.2a1 1 0 0 1-1 .8H8.2a1 1 0 0 1-1-.8L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  restaurant: '<path d="M6 2v6a2 2 0 0 0 4 0V2"/><path d="M8 8v14"/><path d="M17 2c-1.5 2.2-2 5-2 8 0 2.2 1 4 2 4.5V22"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  car: '<path d="M3 13l1.5-5A2 2 0 0 1 6.4 6.5h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/><circle cx="7.5" cy="16.5" r="1.2"/><circle cx="16.5" cy="16.5" r="1.2"/>',
+  grid: '<circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/>',
+};
+
+const CATEGORY_ICONS = {
+  restaurant: 'restaurant', 'shopping-bag': 'bag', services: 'briefcase',
+  briefcase: 'briefcase', heart: 'heart', book: 'book', car: 'car', home: 'grid',
+  wrench: 'wrench', mosque: 'mosque', kaaba: 'grid', child: 'grid', hospital: 'grid',
+  'life-ring': 'grid', wheelchair: 'grid', wifi: 'grid', parking: 'grid',
+};
+
+function icon(name, size = 16) {
+  const key = CATEGORY_ICONS[name] || name || 'grid';
+  const p = ICONS[key] || ICONS.grid;
+  return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
+
+/* ============================================================
  * Tiny utilities
  * ============================================================ */
 function esc(s) {
@@ -118,13 +158,18 @@ async function ensureCsrf() {
 /* ============================================================
  * Layout (header + footer injected so pages stay DRY)
  * ============================================================ */
+function wordmark() {
+  return `
+  <a href="index.html" class="brand" aria-label="Umma Directory — home">
+    <svg class="brand-burst" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">${ICONS.spark}</svg>
+    <span class="brand-text">umma<em>!</em></span>
+  </a>`;
+}
+
 const HEADER_HTML = `
 <nav class="navbar">
   <div class="container nav-inner">
-    <a href="index.html" class="brand">
-      <span class="brand-icon">🕌</span>
-      <span class="brand-text">Umma <b>Directory</b></span>
-    </a>
+    ${wordmark()}
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
@@ -132,7 +177,7 @@ const HEADER_HTML = `
       <a class="nav-link" href="businesses.html">Businesses</a>
       <a class="nav-link" href="mosques.html">Mosques</a>
       <a class="nav-link" href="fundis.html">Fundis</a>
-      <a class="btn btn-primary btn-write" href="businesses.html">✏️ Write a Review</a>
+      <a class="btn btn-primary btn-write" href="businesses.html">${icon('pen', 14)} Write a Review</a>
       <div class="nav-auth" id="navAuth"></div>
     </div>
   </div>
@@ -145,7 +190,10 @@ const FOOTER_HTML = `
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-col footer-about">
-      <div class="brand"><span class="brand-icon">🕌</span><span class="brand-text">Umma <b>Directory</b></span></div>
+      <a href="index.html" class="brand" aria-label="Umma Directory — home">
+        <svg class="brand-burst" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">${ICONS.spark}</svg>
+        <span class="brand-text">umma<em>!</em></span>
+      </a>
       <p>Connecting Muslim communities with trusted businesses, mosques and skilled workers.</p>
     </div>
     <div class="footer-col">
@@ -243,7 +291,7 @@ function businessCard(b) {
     <a class="result-media" href="business.html?id=${b.id}">
       ${b.primary_photo
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
-        : `<div class="media-placeholder">🛍️</div>`}
+        : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
     <div class="result-body">
@@ -257,9 +305,9 @@ function businessCard(b) {
       ${b.is_open ? '<span class="open-now">Open</span>' : ''}
       <p class="result-snippet">${esc(b.short_description || '')}</p>
       <div class="result-actions">
-        ${b.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(b.phone)}">📞 Call</a>` : ''}
-        ${b.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">🧭 Directions</a>` : ''}
-        <span class="result-loc">📍 ${esc(b.city || '')}</span>
+        ${b.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(b.phone)}">${icon('phone', 13)} Call</a>` : ''}
+        ${b.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 13)} Directions</a>` : ''}
+        <span class="result-loc">${icon('pin', 12)} ${esc(b.city || '')}</span>
       </div>
     </div>
   </article>`;
@@ -271,7 +319,7 @@ function mosqueCard(m) {
     <a class="result-media" href="mosque.html?id=${m.id}">
       ${m.primary_photo
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
-        : `<div class="media-placeholder">🕌</div>`}
+        : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
       ${m.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
     <div class="result-body">
@@ -282,12 +330,12 @@ function mosqueCard(m) {
         <span class="muted">(${m.review_count || 0})</span>
         <span class="result-meta"> · Mosque</span>
       </div>
-      ${m.next_prayer ? `<span class="prayer-now"><span>🕌 Next: <b>${esc(m.next_prayer.name)}</b> at ${esc(m.next_prayer.time)}</span></span>` : ''}
+      ${m.next_prayer ? `<span class="prayer-now"><span>${icon('clock', 13)} Next: <b>${esc(m.next_prayer.name)}</b> at ${esc(m.next_prayer.time)}</span></span>` : ''}
       <p class="result-snippet">${esc(m.address || '')}</p>
       <div class="result-actions">
-        ${m.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(m.phone)}">📞 Call</a>` : ''}
-        ${m.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">🧭 Directions</a>` : ''}
-        <span class="result-loc">📍 ${esc(m.city || '')}</span>
+        ${m.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(m.phone)}">${icon('phone', 13)} Call</a>` : ''}
+        ${m.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 13)} Directions</a>` : ''}
+        <span class="result-loc">${icon('pin', 12)} ${esc(m.city || '')}</span>
       </div>
     </div>
   </article>`;
@@ -300,7 +348,7 @@ function fundiCard(f) {
     <a class="result-media" href="fundi.html?id=${f.id}">
       ${f.profile_photo
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
-        : `<div class="media-placeholder">🧰</div>`}
+        : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
       ${f.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
     <div class="result-body">
@@ -314,9 +362,9 @@ function fundiCard(f) {
       <div class="chips">${skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
       <p class="result-snippet">${esc(f.bio || '')}</p>
       <div class="result-actions">
-        ${f.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(f.phone)}">📞 Call</a>` : ''}
-        ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
-        <span class="result-loc">📍 ${esc(f.city || '')}${f.hourly_rate_min ? ' · ' + fmtMoney(f.hourly_rate_min) + '/hr' : ''}</span>
+        ${f.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(f.phone)}">${icon('phone', 13)} Call</a>` : ''}
+        ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 13)} WhatsApp</a>` : ''}
+        <span class="result-loc">${icon('pin', 12)} ${esc(f.city || '')}${f.hourly_rate_min ? ' · ' + fmtMoney(f.hourly_rate_min) + '/hr' : ''}</span>
       </div>
     </div>
   </article>`;
@@ -329,7 +377,7 @@ function businessTile(b) {
     <a class="tile-media" href="business.html?id=${b.id}">
       ${b.primary_photo
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
-        : `<div class="media-placeholder">🛍️</div>`}
+        : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
     </a>
     <div class="tile-body">
@@ -339,7 +387,7 @@ function businessTile(b) {
         <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span>
         <span class="muted">(${b.review_count || 0})</span>
       </div>
-      <div class="tile-loc">📍 ${esc(b.city || '')}${b.category_name ? ' · ' + esc(b.category_name) : ''}</div>
+      <div class="tile-loc">${icon('pin', 12)} ${esc(b.city || '')}${b.category_name ? ' · ' + esc(b.category_name) : ''}</div>
     </div>
   </article>`;
 }
@@ -350,7 +398,7 @@ function mosqueTile(m) {
     <a class="tile-media" href="mosque.html?id=${m.id}">
       ${m.primary_photo
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
-        : `<div class="media-placeholder">🕌</div>`}
+        : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
@@ -359,8 +407,8 @@ function mosqueTile(m) {
         <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span>
         <span class="muted">(${m.review_count || 0})</span>
       </div>
-      ${m.next_prayer ? `<span class="prayer-now">Next: <b>${esc(m.next_prayer.name)}</b> ${esc(m.next_prayer.time)}</span>` : ''}
-      <div class="tile-loc">📍 ${esc(m.city || '')}</div>
+      ${m.next_prayer ? `<span class="prayer-now">${icon('clock', 12)} Next: <b>${esc(m.next_prayer.name)}</b> ${esc(m.next_prayer.time)}</span>` : ''}
+      <div class="tile-loc">${icon('pin', 12)} ${esc(m.city || '')}</div>
     </div>
   </article>`;
 }
@@ -371,7 +419,7 @@ function fundiTile(f) {
     <a class="tile-media" href="fundi.html?id=${f.id}">
       ${f.profile_photo
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
-        : `<div class="media-placeholder">🧰</div>`}
+        : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
     </a>
     <div class="tile-body">
       <h3 class="tile-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
@@ -380,14 +428,24 @@ function fundiTile(f) {
         <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span>
         <span class="muted">(${f.review_count || 0})</span>
       </div>
-      <div class="tile-loc">${esc(f.profession)} · 📍 ${esc(f.city || '')}</div>
+      <div class="tile-loc">${esc(f.profession)} · ${icon('pin', 12)} ${esc(f.city || '')}</div>
     </div>
   </article>`;
 }
 
+const REACTIONS = [
+  ['useful', 'thumb', 'Useful'],
+  ['funny', 'smile', 'Funny'],
+  ['cool', 'cool', 'Cool'],
+];
+
 function reviewCard(r) {
   const u = r.user || {};
   const initial = esc((u.full_name || 'U').charAt(0).toUpperCase());
+  const reactions = REACTIONS.map(([type, ic, label]) => {
+    const count = r[type + '_count'] ?? (type === 'useful' ? (r.helpful_count || 0) : 0);
+    return `<button class="reaction-btn react-btn" data-review-id="${r.id}" data-react="${type}">${icon(ic, 14)} <span class="react-label">${label}</span> <span class="react-count">${count}</span></button>`;
+  }).join('');
   return `
   <article class="review" data-review-id="${r.id}">
     <div class="review-head">
@@ -405,11 +463,7 @@ function reviewCard(r) {
     <h4 class="review-title">${esc(r.title || '')}</h4>
     <p class="review-text">${esc(r.content || '')}</p>
     ${r.owner_response ? `<div class="owner-response"><b>Owner response:</b> ${esc(r.owner_response)}</div>` : ''}
-    <div class="review-actions">
-      <button class="reaction-btn helpful-btn" data-review-id="${r.id}">
-        👍 Useful <span class="helpful-count">${r.helpful_count || 0}</span>
-      </button>
-    </div>
+    <div class="review-actions">${reactions}</div>
   </article>`;
 }
 
@@ -431,23 +485,33 @@ function paginationHtml(page, pages, baseQuery) {
 }
 
 function emptyState(title, sub, cta) {
-  return `<div class="empty-state"><div class="empty-icon">🔍</div><h3>${esc(title)}</h3><p>${esc(sub)}</p>${cta || ''}</div>`;
+  return `<div class="empty-state"><div class="empty-icon">${icon('search', 36)}</div><h3>${esc(title)}</h3><p>${esc(sub)}</p>${cta || ''}</div>`;
 }
 
 /* ============================================================
- * Event delegation: helpful buttons (any page)
+ * Event delegation: review reactions (Useful / Funny / Cool)
  * ============================================================ */
 document.addEventListener('click', async (e) => {
-  const btn = e.target.closest('.helpful-btn');
+  const btn = e.target.closest('.react-btn');
   if (!btn) return;
   const reviewId = btn.dataset.reviewId;
+  const reaction = btn.dataset.react;
   if (!session.user) { toast('Please login to vote', 'error'); return; }
   try {
-    const data = await api('api/reviews.php', { method: 'POST', body: { action: 'helpful', review_id: reviewId } });
-    const count = btn.querySelector('.helpful-count');
-    if (count) count.textContent = data.helpful_count;
-    btn.disabled = true;
-    btn.classList.add('voted');
+    const data = await api('api/reviews.php', { method: 'POST', body: { action: 'react', review_id: reviewId, reaction } });
+    const card = btn.closest('.review');
+    if (card) {
+      card.querySelectorAll('.react-btn').forEach(b => {
+        const t = b.dataset.react;
+        const count = b.querySelector('.react-count');
+        if (count && data.counts[t] !== undefined) count.textContent = data.counts[t];
+        b.classList.toggle('voted', (data.user_reactions || []).includes(t));
+      });
+    } else {
+      const count = btn.querySelector('.react-count');
+      if (count && data.counts[reaction] !== undefined) count.textContent = data.counts[reaction];
+      btn.classList.toggle('voted', (data.user_reactions || []).includes(reaction));
+    }
     toast('Thanks for your feedback!');
   } catch (err) {
     toast(err.message || 'Could not vote', 'error');

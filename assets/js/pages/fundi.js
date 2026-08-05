@@ -64,13 +64,13 @@ window.appReady.then(async () => {
               ${f.is_verified ? '<span class="chip">✓ Verified</span>' : ''}
             </div>
             <h1 class="detail-title">${esc(f.full_name)}</h1>
-            <p class="muted">${esc(f.profession)}${f.years_experience ? ' · ' + f.years_experience + ' years experience' : ''} · 📍 ${esc(f.city || '')}${f.region ? ', ' + esc(f.region) : ''}</p>
+            <p class="muted">${esc(f.profession)}${f.years_experience ? ' · ' + f.years_experience + ' years experience' : ''} · ${icon('pin', 12)} ${esc(f.city || '')}${f.region ? ', ' + esc(f.region) : ''}</p>
           </div>
         </div>
         <div class="detail-actions">
-          ${f.phone ? `<a class="btn btn-primary" href="tel:${esc(f.phone)}">📞 Call</a>` : ''}
-          ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
-          ${f.hourly_rate_min ? `<a class="btn btn-ghost">💰 ${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}/hr</a>` : ''}
+          ${f.phone ? `<a class="btn btn-primary" href="tel:${esc(f.phone)}">${icon('phone', 14)} Call</a>` : ''}
+          ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
+          ${f.hourly_rate_min ? `<a class="btn btn-ghost">${icon('clock', 14)} ${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}/hr</a>` : ''}
         </div>
       </div>
 
@@ -98,7 +98,7 @@ window.appReady.then(async () => {
           <section class="panel">
             <h2>Reviews</h2>
             <div style="margin-bottom:1rem;">
-              <button class="btn btn-primary" id="writeReviewBtn">✏️ Write a review</button>
+              <button class="btn btn-primary" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
             </div>
             ${reviews.length ? reviews.map(reviewCard).join('') : '<p class="muted center" style="padding:1.5rem 0;">No reviews yet — be the first!</p>'}
           </section>

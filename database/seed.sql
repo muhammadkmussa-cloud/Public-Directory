@@ -150,6 +150,7 @@ INSERT INTO `reviews` (`user_id`, `reviewable_id`, `reviewable_type`, `rating`, 
 (3, 2, 'fundi', 5, 'Beautiful kitenge dresses', 'Fatuma made three dresses for my daughters and they fit perfectly. Wonderful craftsmanship and lovely person.', 6, 1),
 (2, 3, 'fundi', 4, 'Quality solar install', 'Musa installed our solar system neatly and explained the maintenance. Slightly delayed on the second day but worth the wait.', 3, 1);
 
--- review helpful votes (demo users)
-INSERT INTO `review_helpful` (`review_id`, `user_id`, `is_helpful`) VALUES
-(1, 3, 1), (2, 2, 1), (3, 2, 1), (4, 3, 1), (8, 3, 1), (11, 3, 1);
+-- review reactions (demo users): useful / funny / cool
+INSERT INTO `review_helpful` (`review_id`, `user_id`, `reaction_type`, `is_helpful`) VALUES
+(1, 3, 'useful', 1), (2, 2, 'funny', 1), (3, 2, 'useful', 1), (4, 3, 'cool', 1),
+(8, 3, 'useful', 1), (11, 3, 'useful', 1), (11, 2, 'cool', 1), (5, 3, 'funny', 1);

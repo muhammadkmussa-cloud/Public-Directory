@@ -57,7 +57,7 @@ window.appReady.then(async () => {
         </div>
         <h4 style="margin:.5rem 0 .2rem;">${esc(r.title || '')}</h4>
         <p class="review-text">${esc(r.content || '')}</p>
-        <div class="muted small" style="margin-top:.4rem;">👍 ${r.helpful_count || 0} found this helpful</div>
+        <div class="muted small" style="margin-top:.4rem;">${icon('thumb', 13)} ${r.helpful_count || 0} found this useful</div>
       </div>`).join('');
   } catch (e) {
     document.getElementById('myReviews').innerHTML = '<p class="muted">Could not load your reviews.</p>';

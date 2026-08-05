@@ -126,31 +126,63 @@ if ($action === 'create') {
     json_ok(['review_id' => $reviewId], 201);
 }
 
-/* ================= helpful ================= */
-if ($action === 'helpful') {
+/* ================= react (useful / funny / cool) ================= */
+if ($action === 'react' || $action === 'helpful') {
     $reviewId = (int)($body['review_id'] ?? 0);
+    $reaction = $action === 'helpful' ? 'useful' : ($body['reaction'] ?? 'useful');
+    if (!in_array($reaction, ['useful', 'funny', 'cool'], true)) {
+        json_err('Invalid reaction', 422);
+    }
     $review = $db->fetchOne('SELECT id FROM reviews WHERE id = ?', [$reviewId]);
     if (!$review) {
         json_err('Review not found', 404);
     }
 
-    // prevent duplicates (PK review_id + user_id)
+    // toggle: vote if absent, remove if present
     $db->begin();
     try {
-        $db->insert(
-            'INSERT INTO review_helpful (review_id, user_id, is_helpful) VALUES (?, ?, 1)',
-            [$reviewId, $user['id']]
+        $existing = $db->fetchOne(
+            'SELECT id FROM review_helpful WHERE review_id = ? AND user_id = ? AND reaction_type = ?',
+            [$reviewId, $user['id'], $reaction]
         );
-        $db->execute('UPDATE reviews SET helpful_count = helpful_count + 1 WHERE id = ?', [$reviewId]);
-        $db->execute('UPDATE users SET helpful_votes = helpful_votes + 1 WHERE id = ?', [$user['id']]);
+        if ($existing) {
+            $db->execute(
+                'DELETE FROM review_helpful WHERE review_id = ? AND user_id = ? AND reaction_type = ?',
+                [$reviewId, $user['id'], $reaction]
+            );
+        } else {
+            $db->insert(
+                'INSERT INTO review_helpful (review_id, user_id, reaction_type, is_helpful) VALUES (?, ?, ?, 1)',
+                [$reviewId, $user['id'], $reaction]
+            );
+            $db->execute('UPDATE users SET helpful_votes = helpful_votes + 1 WHERE id = ?', [$user['id']]);
+        }
+        // keep legacy helpful_count column = number of "useful" reactions
+        $useful = (int)$db->fetchValue(
+            "SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'useful'",
+            [$reviewId]
+        );
+        $db->execute('UPDATE reviews SET helpful_count = ? WHERE id = ?', [$useful, $reviewId]);
         $db->commit();
     } catch (Throwable $e) {
         $db->rollback();
-        json_err('You already marked this review as helpful', 409);
+        error_log('Review react failed: ' . $e->getMessage());
+        json_err('Could not save your reaction', 500);
     }
 
-    $count = (int)$db->fetchValue('SELECT helpful_count FROM reviews WHERE id = ?', [$reviewId]);
-    json_ok(['helpful_count' => $count]);
+    $counts = [
+        'useful' => (int)$db->fetchValue("SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'useful'", [$reviewId]),
+        'funny'  => (int)$db->fetchValue("SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'funny'", [$reviewId]),
+        'cool'   => (int)$db->fetchValue("SELECT COUNT(*) FROM review_helpful WHERE review_id = ? AND reaction_type = 'cool'", [$reviewId]),
+    ];
+    $mine = $db->fetchAll(
+        'SELECT reaction_type FROM review_helpful WHERE review_id = ? AND user_id = ?',
+        [$reviewId, $user['id']]
+    );
+    json_ok([
+        'counts' => $counts,
+        'user_reactions' => array_column($mine, 'reaction_type'),
+    ]);
 }
 
 /* ================= delete ================= */

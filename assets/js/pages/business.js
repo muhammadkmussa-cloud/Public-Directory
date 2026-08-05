@@ -94,13 +94,13 @@ window.appReady.then(async () => {
           <span class="price">${esc(b.price_range || '$')}</span>
         </div>
         <h1 class="detail-title">${esc(b.name)}</h1>
-        <p class="muted">📍 ${esc(b.address || '')}${b.city ? ', ' + esc(b.city) : ''}${b.region ? ', ' + esc(b.region) : ''}</p>
+        <p class="muted">${icon('pin', 13)} ${esc(b.address || '')}${b.city ? ', ' + esc(b.city) : ''}${b.region ? ', ' + esc(b.region) : ''}</p>
         <div class="detail-actions">
-          ${b.phone ? `<a class="btn btn-primary" href="tel:${esc(b.phone)}">📞 Call</a>` : ''}
-          ${b.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(b.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
-          ${b.website ? `<a class="btn btn-outline" href="${esc(b.website)}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
-          ${b.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">🗺️ Directions</a>` : ''}
-          <button class="btn btn-ghost" id="checkinBtn">📍 Check in</button>
+          ${b.phone ? `<a class="btn btn-primary" href="tel:${esc(b.phone)}">${icon('phone', 14)} Call</a>` : ''}
+          ${b.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(b.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
+          ${b.website ? `<a class="btn btn-outline" href="${esc(b.website)}" target="_blank" rel="noopener">${icon('globe', 14)} Website</a>` : ''}
+          ${b.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
+          <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ window.appReady.then(async () => {
               }).join('')}
             </div>
             <div style="margin:1.2rem 0 0;">
-              <button class="btn btn-primary" id="writeReviewBtn">✏️ Write a review</button>
+              <button class="btn btn-primary" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
             </div>
             <div id="reviewsList">
               ${reviews.length ? reviews.map(reviewCard).join('') : '<p class="muted center" style="padding:1.5rem 0;">No reviews yet — be the first!</p>'}

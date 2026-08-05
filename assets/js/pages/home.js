@@ -11,7 +11,7 @@ window.appReady.then(async () => {
     const cats = await api('api/categories.php?type=business');
     chipsEl.innerHTML = cats.map(c => `
       <a class="category-chip" href="businesses.html?category=${encodeURIComponent(c.slug)}">
-        <span class="cat-icon">${esc(c.icon || '🏷️')}</span>
+        <span class="cat-icon">${icon(c.icon || 'grid', 22)}</span>
         <span>${esc(c.name)}</span>
       </a>`).join('');
   } catch (e) {

@@ -38,6 +38,9 @@ if (isset($_GET['id'])) {
     $reviews = $db->fetchAll(
         'SELECT r.id, r.rating, r.title, r.content, r.helpful_count, r.is_verified_visit,
                 r.owner_response, r.created_at,
+                (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'useful\') AS useful_count,
+                (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'funny\')  AS funny_count,
+                (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'cool\')   AS cool_count,
                 u.full_name, u.profile_photo
            FROM reviews r
            JOIN users u ON u.id = r.user_id

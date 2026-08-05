@@ -85,12 +85,12 @@ window.appReady.then(async () => {
           ${m.is_verified ? '<span class="chip">✓ Verified</span>' : ''}
         </div>
         <h1 class="detail-title">${esc(m.name)}</h1>
-        <p class="muted">📍 ${esc(m.address || '')}${m.city ? ', ' + esc(m.city) : ''}${m.region ? ', ' + esc(m.region) : ''}</p>
+        <p class="muted">${icon('pin', 13)} ${esc(m.address || '')}${m.city ? ', ' + esc(m.city) : ''}${m.region ? ', ' + esc(m.region) : ''}</p>
         <div class="detail-actions">
-          ${m.phone ? `<a class="btn btn-primary" href="tel:${esc(m.phone)}">📞 Call</a>` : ''}
-          ${m.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">🗺️ Directions</a>` : ''}
-          <button class="btn btn-ghost" id="checkinBtn">📍 Check in</button>
-          <button class="btn btn-outline" id="writeReviewBtn">✏️ Write a review</button>
+          ${m.phone ? `<a class="btn btn-primary" href="tel:${esc(m.phone)}">${icon('phone', 14)} Call</a>` : ''}
+          ${m.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
+          <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
+          <button class="btn btn-outline" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
         </div>
       </div>
 

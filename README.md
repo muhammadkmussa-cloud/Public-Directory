@@ -86,7 +86,7 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/fundis.php` / `?id=N` / `?top=1` | GET | list / detail (+portfolio) |
 | `api/categories.php?type=` | GET | category chips |
 | `api/reviews.php?action=mine` | GET | your reviews (login) |
-| `api/reviews.php` | POST | `{action: create\|helpful\|delete, ...}` (login + CSRF) |
+| `api/reviews.php` | POST | `{action: create\|react\|delete, ...}` — react: `{reaction: useful\|funny\|cool}` (login + CSRF) |
 | `api/checkin.php` | POST | `{checkinable_id, checkinable_type, note}` (login + CSRF) |
 
 State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), which the frontend attaches automatically.
@@ -98,6 +98,7 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 - Sessions: `httponly` + `SameSite=Lax` cookies, regenerated on login.
 - CSRF enforced on every state-changing API call.
 - Uploads folder blocks PHP execution via `.htaccess`.
+- Review reactions (Useful / Funny / Cool) are stored per-user per-type in `review_helpful` (toggle).
 - Sample image files in `assets/img/sample/` are placeholders — replace with real photos in production (uploaded files go to `uploads/`, which is git-ignored).
 
 ## Roadmap (not yet built)
