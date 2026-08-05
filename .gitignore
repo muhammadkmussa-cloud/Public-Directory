@@ -1,0 +1,57 @@
+```
+# Dependencies
+vendor/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP specific
+*.php~
+phpunit.xml.dist
+
+# Database
+*.sql.bak
+*.db.bak
+
+# Cache
+.cache/
+*.cache
+
+# Backup files
+*~
+*.bak
+*.backup
+
+# Composer (PHP dependency manager)
+composer.lock
+vendor/
+
+# Session files
+sess_*
+
+# Uploads/temporary files
+uploads/
+temp/
+tmp/
+
+# Coverage reports
+coverage/
+*.gcov
+
+# Testing
+.phpunit.result.cache
+```
