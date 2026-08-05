@@ -57,7 +57,7 @@ A Yelp-style directory for the Muslim community — **halal businesses, mosques 
 5. **Delete `database/install.php` (and `database/install.lock`) from the server.**
 6. Done. Open your domain — the frontend will talk to `/api/*` automatically.
 
-The installer creates the schema, loads sample data, and creates demo accounts:
+The installer creates the schema, loads sample data (30 businesses, 14 mosques, 11 fundis, 30+ reviews with owner responses, photo galleries, check-ins, emergency numbers, ads) and creates demo accounts:
 
 | Role | Login | Password |
 |---|---|---|
@@ -115,11 +115,20 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 
 ## Security notes
 
-- All SQL uses PDO prepared statements.
-- Passwords hashed with bcrypt (`HASH_COST` in config).
-- Sessions: `httponly` + `SameSite=Lax` cookies, regenerated on login.
-- CSRF enforced on every state-changing API call.
-- Uploads folder blocks PHP execution via `.htaccess`.
+- **SQL** — all queries via PDO prepared statements (no string concatenation of user input).
+- **Passwords** — bcrypt (`HASH_COST`), plus a weak-password blocklist (common passwords,
+  username/email-substring, repeated patterns) on register & reset.
+- **Brute-force protection** — per-account lockout (10 failed logins → 15 min block) and
+  per-IP rate limiting on auth, reviews, check-ins, donations, quotes, uploads, favorites and ads.
+- **Sessions** — `httponly` + `SameSite=Lax` (+ `Secure` over HTTPS), `use_strict_mode`,
+  `session_regenerate_id()` on login.
+- **CSRF** — enforced on every state-changing API call (fetch token from `api/csrf.php`,
+  send as `X-CSRF-Token`).
+- **Headers** — Content-Security-Policy, X-Frame-Options, nosniff, Referrer-Policy,
+  COOP/CORP, HSTS (Apache `.htaccess`); API responses are `no-store`.
+- **Uploads** — `uploads/.htaccess` blocks all script execution; the upload API sniffs MIME
+  (finfo), re-encodes via GD (strips EXIF/payloads), random filenames, thumbnails.
+- **Sensitive files** — `.htaccess` denies `.sql`/`.log`/`.bak`/dotfiles and `install.php`.
 - Review reactions (Useful / Funny / Cool) are stored per-user per-type in `review_helpful` (toggle).
 - Sample image files in `assets/img/sample/` are placeholders — replace with real photos in production (uploaded files go to `uploads/`, which is git-ignored).
 

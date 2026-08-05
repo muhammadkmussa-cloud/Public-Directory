@@ -66,6 +66,7 @@ if ($action === 'list') {
 /* ================= impression ================= */
 if ($action === 'impression') {
     require_method('POST');
+    rate_limit('ad_imp', 300, 300);
     require_csrf();
     $body = json_body();
     $adId = (int)($body['ad_id'] ?? 0);
@@ -84,6 +85,7 @@ if ($action === 'impression') {
 /* ================= click ================= */
 if ($action === 'click') {
     require_method('POST');
+    rate_limit('ad_click', 120, 300);
     require_csrf();
     $body = json_body();
     $adId = (int)($body['ad_id'] ?? 0);

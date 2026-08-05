@@ -16,6 +16,7 @@
 require __DIR__ . '/_bootstrap.php';
 
 require_method('POST');
+rate_limit('upload', 20, 3600);
 require_login();
 require_csrf();
 

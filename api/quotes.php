@@ -11,6 +11,7 @@
 require __DIR__ . '/_bootstrap.php';
 
 require_method('POST');
+rate_limit('quote', 10, 900);
 require_csrf();
 
 $db = Database::getInstance();

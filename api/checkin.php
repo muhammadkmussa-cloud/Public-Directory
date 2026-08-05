@@ -7,6 +7,7 @@
 require __DIR__ . '/_bootstrap.php';
 
 require_method('POST');
+rate_limit('checkin', 30, 300);
 $user = require_login();
 require_csrf();
 

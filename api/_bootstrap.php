@@ -9,6 +9,9 @@ require_once __DIR__ . '/../config/config.php';
 // ---- Secure session -------------------------------------------------------
 $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') === '443';
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.cookie_httponly', '1');
     session_set_cookie_params([
         'lifetime' => SESSION_LIFETIME,
         'path'     => '/',
@@ -23,6 +26,44 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/Auth.php';
+
+// ---- Security headers (API) ----------------------------------------------
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('X-XSS-Protection: 1; mode=block');
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
+header('Cache-Control: no-store, private'); // API responses are never cached
+
+// ---- Rate limiting (simple in-memory token bucket per IP) ------------------
+// Note: on shared hosting, PHP-FPM resets the process pool, so this is a
+// best-effort throttle rather than a hard guarantee. For hard limits use
+// mod_evasive / Cloudflare.
+function rate_limit($key, $max = 60, $window = 60)
+{
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $now = time();
+    $bucket = $key . ':' . $ip;
+    if (!isset($_SESSION['rl'][$bucket])) {
+        $_SESSION['rl'][$bucket] = ['count' => 0, 'reset' => $now + $window];
+    }
+    $b = &$_SESSION['rl'][$bucket];
+    if ($b['reset'] <= $now) {
+        $b = ['count' => 0, 'reset' => $now + $window];
+    }
+    $b['count']++;
+    // prune old buckets to keep session small
+    if (count($_SESSION['rl']) > 50) {
+        $_SESSION['rl'] = array_filter($_SESSION['rl'], function ($v) use ($now) {
+            return $v['reset'] > $now;
+        });
+    }
+    if ($b['count'] > $max) {
+        json_err('Too many requests — please slow down', 429);
+    }
+}
 
 // ---- JSON response helpers ------------------------------------------------
 function json_out($data, $code = 200)

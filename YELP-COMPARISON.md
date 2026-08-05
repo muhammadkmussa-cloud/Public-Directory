@@ -146,6 +146,12 @@
 16. ✅ **PWA** — manifest + service worker on all pages (installable, offline shell)
 17. 🟡 **SEO** — JSON-LD (LocalBusiness/Place/Person) on detail pages; full SSR/pre-render pending
 
+**Hardening (2026-08-05):**
+- ✅ Rate limiting (per-IP) on all state-changing APIs + login lockout
+- ✅ Weak-password blocklist, secure session flags, CSRF everywhere
+- ✅ CSP + security headers + HSTS; uploads deny all scripts; sensitive-file deny
+- ✅ Seed expansion: 30 businesses, 14 mosques, 11 fundis, 30+ reviews, galleries, check-ins, ads
+
 ---
 
 ## Bottom line

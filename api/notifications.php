@@ -40,6 +40,7 @@ if ($method === 'GET' && isset($_GET['unread'])) {
 
 /* ================= mark read ================= */
 if ($method === 'POST') {
+    rate_limit('notif', 60, 300);
     require_csrf();
     $body = json_body();
     $action = $body['action'] ?? '';

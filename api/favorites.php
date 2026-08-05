@@ -96,6 +96,7 @@ if ($method === 'GET' && $action === 'mine') {
 
 /* ================= toggle ================= */
 if ($method === 'POST' && $action === 'toggle') {
+    rate_limit('favorite', 120, 300);
     $user = require_login();
     require_csrf();
     $body = json_body();

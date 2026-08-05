@@ -14,6 +14,7 @@ require __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../includes/Mpesa.php';
 
 require_method('POST');
+rate_limit('donation', 20, 300);
 require_csrf();
 
 $db = Database::getInstance();

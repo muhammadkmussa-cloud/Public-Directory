@@ -37,6 +37,9 @@ class Auth
         if (strlen($password) < 8) {
             return ['ok' => false, 'error' => 'Password must be at least 8 characters'];
         }
+        if (self::isWeakPassword($password, $username, $email)) {
+            return ['ok' => false, 'error' => 'Password is too weak — use a longer, less common password'];
+        }
 
         $db = self::db();
         if ($db->fetchOne('SELECT id FROM users WHERE email = ?', [$email])) {
@@ -72,6 +75,14 @@ class Auth
             return ['ok' => false, 'error' => 'Please enter your email/username and password'];
         }
 
+        // per-account lockout: 10 failed attempts → 15 min block
+        $failKey = 'login_fail_' . md5(strtolower($identifier));
+        $failCount = (int)($_SESSION['lockout'][$failKey]['count'] ?? 0);
+        $failUntil = (int)($_SESSION['lockout'][$failKey]['until'] ?? 0);
+        if ($failCount >= 10 && time() < $failUntil) {
+            return ['ok' => false, 'error' => 'Too many failed attempts — try again in a few minutes'];
+        }
+
         $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $user = self::db()->fetchOne(
             "SELECT * FROM users WHERE ($field = ?) AND is_active = 1",
@@ -79,8 +90,16 @@ class Auth
         );
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
+            // record the failure for lockout
+            $_SESSION['lockout'][$failKey]['count'] = $failCount + 1;
+            if ($failCount + 1 >= 10) {
+                $_SESSION['lockout'][$failKey]['until'] = time() + 900;
+            }
             return ['ok' => false, 'error' => 'Invalid credentials'];
         }
+
+        // success → clear any lockout for this account
+        unset($_SESSION['lockout'][$failKey]);
 
         session_regenerate_id(true);
 
@@ -136,6 +155,23 @@ class Auth
         return $u && $u['user_type'] === 'admin';
     }
 
+    /** Reject common/weak passwords and passwords containing the username/email */
+    private static function isWeakPassword($password, $username = '', $email = '')
+    {
+        $p = strtolower(trim($password));
+        if (strlen($p) < 8) return true;
+        if ($p === strtolower(trim($username))) return true;
+        if ($email && strpos($p, strtolower(trim(explode('@', $email)[0]))) !== false) return true;
+
+        $common = ['password', '12345678', '123456789', 'qwertyui', 'iloveyou', 'admin123',
+                   'letmein', 'welcome1', 'monkey12', 'dragon12', 'abc12345', '11111111',
+                   '12345678a', 'password1', 'changeme', 'default1', 'user1234', 'test1234'];
+        if (in_array($p, $common, true)) return true;
+        // repeated patterns like aaaaaaaa, 12121212
+        if (preg_match('/^(.)\1{5,}$/', $p)) return true;
+        return false;
+    }
+
     /* ------------------------------------------------------------------
      * Password reset
      * ------------------------------------------------------------------ */
@@ -184,6 +220,9 @@ class Auth
         }
         if (strlen($newPassword) < 8) {
             return ['ok' => false, 'error' => 'Password must be at least 8 characters'];
+        }
+        if (self::isWeakPassword($newPassword)) {
+            return ['ok' => false, 'error' => 'Password is too weak — use a longer, less common password'];
         }
 
         $reset = self::db()->fetchOne(

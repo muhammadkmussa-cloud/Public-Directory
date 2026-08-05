@@ -19,6 +19,7 @@ if ($action === 'me') {
 /* ---- login ---- */
 if ($action === 'login') {
     require_method('POST');
+    rate_limit('login', 8, 300);          // 8 attempts / 5 min per IP
     require_csrf();
     $body = json_body();
     $result = Auth::login($body['identifier'] ?? '', $body['password'] ?? '');
@@ -31,6 +32,7 @@ if ($action === 'login') {
 /* ---- register ---- */
 if ($action === 'register') {
     require_method('POST');
+    rate_limit('register', 5, 900);       // 5 registrations / 15 min per IP
     require_csrf();
     $body = json_body();
     $result = Auth::register(
@@ -49,6 +51,7 @@ if ($action === 'register') {
 /* ---- forgot password ---- */
 if ($action === 'forgot') {
     require_method('POST');
+    rate_limit('forgot', 5, 900);         // prevent email bombing
     require_csrf();
     $body = json_body();
     $result = Auth::requestPasswordReset($body['email'] ?? '');
@@ -62,6 +65,7 @@ if ($action === 'forgot') {
 /* ---- reset password ---- */
 if ($action === 'reset') {
     require_method('POST');
+    rate_limit('reset', 5, 900);
     require_csrf();
     $body = json_body();
     $result = Auth::resetPassword($body['token'] ?? '', $body['password'] ?? '');

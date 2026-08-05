@@ -55,6 +55,7 @@ $action = $body['action'] ?? '';
 
 /* ================= create ================= */
 if ($action === 'create') {
+    rate_limit('review_create', 10, 3600);   // 10 reviews / hour per IP
     $reviewableId   = (int)($body['reviewable_id'] ?? 0);
     $reviewableType = $body['reviewable_type'] ?? '';
     $rating         = (int)($body['rating'] ?? 0);
@@ -159,6 +160,7 @@ if ($action === 'create') {
 
 /* ================= react (useful / funny / cool) ================= */
 if ($action === 'react' || $action === 'helpful') {
+    rate_limit('review_react', 60, 300);     // vote spam
     $reviewId = (int)($body['review_id'] ?? 0);
     $reaction = $action === 'helpful' ? 'useful' : ($body['reaction'] ?? 'useful');
     if (!in_array($reaction, ['useful', 'funny', 'cool'], true)) {

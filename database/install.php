@@ -79,6 +79,10 @@ out("[ok] Demo users ready ({$count} new)\n");
 runSqlFile($pdo, __DIR__ . '/seed.sql', 'sample data');
 out("[ok] Sample data loaded\n");
 
+/* ---- 4b. sample data expansion ------------------------------------------- */
+runSqlFile($pdo, __DIR__ . '/seed_expansion.sql', 'sample data expansion');
+out("[ok] Sample data expansion loaded (30 businesses, 14 mosques, 11 fundis)\n");
+
 /* ---- 5. uploads folder --------------------------------------------------- */
 $uploadDir = UPLOAD_PATH;
 if (!is_dir($uploadDir)) {
