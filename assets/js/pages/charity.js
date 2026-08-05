@@ -55,12 +55,34 @@ window.appReady.then(async () => {
 
       try {
         const res = await api('api/donations.php', { method: 'POST', body });
+
         if (res.payment_url) {
+          // PayPal: send the donor to complete the payment off-site.
           alertBox.innerHTML = `<div class="alert alert-success">${esc(res.message)} <a href="${esc(res.payment_url)}" target="_blank" rel="noopener">Complete payment on PayPal →</a></div>`;
-        } else {
+          setTimeout(() => { closeDonate(); window.location.reload(); }, 3500);
+        } else if (res.status === 'completed') {
           alertBox.innerHTML = `<div class="alert alert-success">${esc(res.message)}${res.payment && res.payment.simulated ? ' <small>(sandbox — no real charge)</small>' : ''}</div>`;
+          setTimeout(() => { closeDonate(); window.location.reload(); }, 2200);
+        } else {
+          // Pending (live M-Pesa / bank): show a waiting state and poll the
+          // donation status until it clears.
+          alertBox.innerHTML = `<div class="alert alert-success">${esc(res.message)} <small>Waiting for payment confirmation…</small></div>`;
+          const donationId = res.donation_id;
+          let attempts = 0;
+          const poll = async () => {
+            attempts++;
+            try {
+              const s = await api('api/donations.php?action=status&donation_id=' + donationId);
+              if (s.status === 'completed') {
+                alertBox.innerHTML = `<div class="alert alert-success">Payment confirmed — thank you! 🙏</div>`;
+                setTimeout(() => { closeDonate(); window.location.reload(); }, 1200);
+                return;
+              }
+            } catch (err) { /* keep polling */ }
+            if (attempts < 20) setTimeout(poll, 3000); // poll every 3s for up to 60s
+          };
+          poll();
         }
-        setTimeout(() => { closeDonate(); window.location.reload(); }, 2200);
       } catch (err) {
         alertBox.innerHTML = `<div class="alert alert-error">${esc(err.message || 'Could not process donation')}</div>`;
         btn.disabled = false;

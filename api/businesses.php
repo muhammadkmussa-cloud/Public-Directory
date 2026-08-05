@@ -7,8 +7,6 @@
  */
 require __DIR__ . '/_bootstrap.php';
 
-require_method('GET');
-
 $db = Database::getInstance();
 
 /* ================= owner dashboard actions (POST) ================= */
@@ -91,6 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     json_err('Unknown action', 404);
 }
 
+// From here on everything is read-only (GET) — enforce the method now.
+require_method('GET');
+
 /* ================= owner listings (GET) ================= */
 if (isset($_GET['action']) && $_GET['action'] === 'mine') {
     $user = require_login();
@@ -158,6 +159,7 @@ if (isset($_GET['id'])) {
     foreach ($db->fetchAll(
         'SELECT rating, COUNT(*) AS c FROM reviews
           WHERE reviewable_id = ? AND reviewable_type = \'business\'
+            AND is_approved = 1 AND is_hidden = 0
           GROUP BY rating',
         [$id]
     ) as $row) {

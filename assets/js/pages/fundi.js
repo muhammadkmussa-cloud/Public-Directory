@@ -94,7 +94,7 @@ window.appReady.then(async () => {
         </div>
         <div class="detail-actions">
           ${f.phone ? `<a class="btn btn-primary" href="tel:${esc(f.phone)}">${icon('phone', 14)} Call</a>` : ''}
-          ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
+          ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
           <button class="btn btn-primary" id="quoteBtnTop">${icon('pen', 14)} Request a quote</button>
           ${f.hourly_rate_min ? `<a class="btn btn-ghost">${icon('clock', 14)} ${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}/hr</a>` : ''}
         </div>
@@ -146,7 +146,7 @@ window.appReady.then(async () => {
           <div class="side-card">
             <h3>Contact</h3>
             ${f.phone ? `<div class="side-row"><span class="lbl">Phone</span><a href="tel:${esc(f.phone)}">${esc(f.phone)}</a></div>` : ''}
-            ${f.whatsapp ? `<div class="side-row"><span class="lbl">WhatsApp</span><a href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">Chat</a></div>` : ''}
+            ${f.whatsapp ? `<div class="side-row"><span class="lbl">WhatsApp</span><a href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">Chat</a></div>` : ''}
             ${f.email ? `<div class="side-row"><span class="lbl">Email</span><a href="mailto:${esc(f.email)}">${esc(f.email)}</a></div>` : ''}
           </div>` : ''}
           <div class="side-card">

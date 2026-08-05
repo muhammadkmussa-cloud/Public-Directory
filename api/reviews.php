@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'mine') 
         $row['listing_name'] = $names[$key];
         $row['listing_url'] = $row['reviewable_type'] . '.html?id=' . $row['reviewable_id'];
     }
+    attachReviewPhotos($db, $rows);
     json_ok($rows);
 }
 
@@ -229,7 +230,23 @@ if ($action === 'delete') {
         json_err('You can only delete your own reviews', 403);
     }
 
-    $db->execute('DELETE FROM reviews WHERE id = ?', [$reviewId]);
+    // Count the photos this review had so we can decrement the author's counter.
+    $authorId = (int)$review['user_id'];
+    $deletedPhotos = (int)$db->fetchValue('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', [$reviewId]);
+
+    $db->execute('DELETE FROM reviews WHERE id = ?', [$reviewId]); // cascades review_photos + review_helpful
+
+    // decrement the author's contributor counters (never below zero)
+    $db->execute(
+        'UPDATE users SET total_reviews = GREATEST(total_reviews - 1, 0) WHERE id = ?',
+        [$authorId]
+    );
+    if ($deletedPhotos > 0) {
+        $db->execute(
+            'UPDATE users SET total_photos = GREATEST(total_photos - ?, 0) WHERE id = ?',
+            [$deletedPhotos, $authorId]
+        );
+    }
 
     // recalc aggregates
     $table = $review['reviewable_type'] === 'business' ? 'businesses' : ($review['reviewable_type'] === 'mosque' ? 'mosques' : 'fundis');
