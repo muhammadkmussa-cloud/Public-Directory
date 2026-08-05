@@ -16,10 +16,10 @@ window.appReady.then(() => {
   if (googleBtn) {
     googleBtn.addEventListener('click', async () => {
       try {
-        // Real PHP backend with keys configured answers with a redirect to
-        // Google; fetch can't follow it cross-origin, so we fall through to a
-        // full-page redirect below. In dev/demo mode the API returns a
-        // simulated link that we complete client-side.
+        // Dev/demo mode (or static preview): the API answers with a simulated
+        // link that we complete client-side. Production answers with a
+        // Location: header to Google, which fetch can't follow cross-origin —
+        // we fall through to a full-page redirect below.
         const res = await api('api/oauth.php?action=login&provider=google');
         if (res && res.login_url) {
           const done = await api(res.login_url);
@@ -31,7 +31,15 @@ window.appReady.then(() => {
             return;
           }
         }
-      } catch (e) { /* fall through to the real redirect */ }
+      } catch (e) {
+        // API-level errors (e.g. Google sign-in not configured) have a status;
+        // surface them instead of bouncing into a JSON page.
+        if (e && e.status) {
+          showAlert(e.message || 'Google sign-in is not available', 'error');
+          return;
+        }
+        // network/CSP failure (or a redirect we couldn't follow) → real redirect
+      }
       window.location.href = 'api/oauth.php?action=login&provider=google';
     });
   }

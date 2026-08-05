@@ -71,8 +71,9 @@ The installer creates the schema, loads sample data (30 businesses, 14 mosques, 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com) → *APIs & Services → Credentials → Create OAuth client ID* → **Web application**.
 2. Add an **Authorized redirect URI** exactly: `https://yourdomain.com/api/oauth.php?action=callback`
 3. Paste the client ID + secret into `config/config.php` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`).
-4. A **"Continue with Google"** button appears on the login and register pages. First-time Google users get an account created automatically with their email pre-verified; users with an existing email/password account are linked on first Google login.
-5. Without keys the site runs in **demo mode** — the button returns a simulated link so the UI is still testable.
+4. **Set `APP_URL` explicitly in `config/config.php`** (e.g. `https://yourdomain.com`) — the redirect URI is built from it and Google requires an exact string match (protocol + host, no trailing slash). If the site is behind a proxy/Cloudflare, auto-detection may pick up the wrong scheme/host and Google will reject the callback.
+5. A **"Continue with Google"** button appears on the login and register pages. First-time Google users get an account created automatically with their email pre-verified; users with an existing email/password account are linked on first Google login.
+6. Without keys the site runs in **demo mode** — the button returns a simulated link so the UI is still testable.
 
 ### Email verification
 

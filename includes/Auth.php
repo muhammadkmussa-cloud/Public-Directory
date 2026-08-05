@@ -238,12 +238,13 @@ class Auth
 
         // 1) existing link → log in
         $link = $db->fetchOne(
-            'SELECT user_id FROM oauth_links WHERE provider = ? AND provider_user_id = ?',
+            'SELECT id, user_id FROM oauth_links WHERE provider = ? AND provider_user_id = ?',
             [$provider, $providerUserId]
         );
         if ($link) {
             $user = $db->fetchOne('SELECT id, is_active FROM users WHERE id = ?', [$link['user_id']]);
             if (!$user) {
+                // linked user was deleted → drop the stale link, then re-link below
                 $db->execute('DELETE FROM oauth_links WHERE id = ?', [$link['id']]);
             } elseif ((int)$user['is_active'] !== 1) {
                 return ['ok' => false, 'error' => 'This account has been disabled'];
