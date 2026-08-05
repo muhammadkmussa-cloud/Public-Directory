@@ -168,6 +168,45 @@ INSERT INTO `favorites` (`user_id`, `favoritable_id`, `favoritable_type`) VALUES
 (2, 3, 'mosque'),
 (2, 1, 'fundi');
 
+-- ---------- CHARITIES & CAMPAIGNS ----------
+INSERT INTO `charities`
+(`user_id`, `name`, `slug`, `description`, `category`, `is_verified`, `registration_number`, `logo_path`, `cover_photo`, `phone`, `whatsapp`, `email`, `website`, `address`, `city`, `paybill_number`, `mpesa_number`, `paypal_link`) VALUES
+(4, 'Ihsan Foundation', 'ihsan-foundation',
+ 'Ihsan Foundation supports orphans and vulnerable children across Kenya with education sponsorships, food baskets and guardianship programs.',
+ 'orphan', 1, 'OP-2021-0041', 'assets/img/sample/charity-ihsan.svg', 'assets/img/sample/charity-ihsan.svg',
+ '+254 722 000 111', '+254722000111', 'info@ihsanfoundation.or.ke', 'https://ihsanfoundation.or.ke', 'Mombasa Road, Embakasi', 'Nairobi', '522533', '0722000111', NULL),
+(4, 'Nuru Medical Fund', 'nuru-medical-fund',
+ 'Nuru Medical Fund raises funds for life-saving surgeries and treatments for families who cannot afford hospital care.',
+ 'health', 1, 'HF-2019-0127', 'assets/img/sample/charity-nuru.svg', 'assets/img/sample/charity-nuru.svg',
+ '+254 700 222 333', '+254700222333', 'care@nurumedical.org', 'https://nurumedical.org', 'Kenyatta Avenue', 'Nairobi', '522544', '0700222333', NULL),
+(4, 'Ummah Relief', 'ummah-relief',
+ 'Rapid-response relief for families affected by floods, drought and emergencies — food, shelter and clean water.',
+ 'emergency', 1, 'ER-2022-0088', 'assets/img/sample/charity-relief.svg', 'assets/img/sample/charity-relief.svg',
+ '+254 733 444 555', '+254733444555', 'relief@ummahrelief.org', 'https://ummahrelief.org', 'Nyali Road', 'Mombasa', '522555', '0733444555', NULL);
+
+INSERT INTO `campaigns` (`charity_id`, `title`, `slug`, `description`, `goal_amount`, `raised_amount`, `donor_count`, `start_date`, `end_date`, `status`, `cover_photo`) VALUES
+(1, 'Ramadan Food Baskets 2026', 'ramadan-food-baskets-2026',
+ 'Provide a 30-day food basket (flour, rice, beans, oil, dates) to 500 families across Nairobi and Mombasa this Ramadan.',
+ 500000, 215000, 86, DATE_SUB(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 20 DAY), 'active', 'assets/img/sample/charity-ihsan.svg'),
+(1, 'Orphan Education Sponsorship', 'orphan-education-sponsorship',
+ 'Sponsor school fees, uniforms and books for 40 orphans through primary and secondary school.',
+ 400000, 98000, 41, DATE_SUB(CURDATE(), INTERVAL 60 DAY), NULL, 'active', 'assets/img/sample/charity-ihsan.svg'),
+(2, 'Aziz''s Heart Surgery', 'aziz-heart-surgery',
+ 'Help 4-year-old Aziz undergo life-saving open-heart surgery at the Mater Hospital.',
+ 1200000, 890000, 312, DATE_SUB(CURDATE(), INTERVAL 45 DAY), NULL, 'active', 'assets/img/sample/charity-nuru.svg'),
+(3, 'Flood Relief — Tana River', 'flood-relief-tana-river',
+ 'Emergency food, clean water and temporary shelter for 300 families displaced by flooding in Tana River County.',
+ 800000, 120000, 64, DATE_SUB(CURDATE(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 'active', 'assets/img/sample/charity-relief.svg');
+
+-- sample donations (completed)
+INSERT INTO `donations` (`campaign_id`, `charity_id`, `user_id`, `amount`, `currency`, `payment_method`, `donor_name`, `donor_email`, `donor_phone`, `is_anonymous`, `status`) VALUES
+(1, 1, 2, 2500, 'KES', 'mpesa', 'Amina Hassan', 'demo@example.com', '+254700000001', 0, 'completed'),
+(1, 1, 3, 1000, 'KES', 'mpesa', NULL, NULL, '+254700000002', 1, 'completed'),
+(2, 1, 3, 5000, 'KES', 'paypal', 'Yusuf Omar', 'yusuf@example.com', NULL, 0, 'completed'),
+(3, 2, 2, 20000, 'KES', 'mpesa', 'Amina Hassan', 'demo@example.com', '+254700000001', 0, 'completed'),
+(3, 2, 3, 1500, 'KES', 'bank', 'Yusuf Omar', 'yusuf@example.com', NULL, 0, 'completed'),
+(4, 3, 2, 3000, 'KES', 'mpesa', 'Amina Hassan', 'demo@example.com', '+254700000001', 0, 'completed');
+
 -- ---------- ADVERTISING (sample sponsored listings) ----------
 -- placement ids from schema seed: 1=homepage_header, 2=homepage_sidebar,
 -- 3=search_results, 4=listing_page, 5=detail_page

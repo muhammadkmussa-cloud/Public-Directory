@@ -63,6 +63,19 @@ window.appReady.then(async () => {
     fundiEl.innerHTML = emptyState('Could not load fundis', e.message);
   }
 
+  /* ---- active causes ---- */
+  const charityEl = document.getElementById('topCharities');
+  if (charityEl) {
+    try {
+      const charities = await api('api/charities.php?top=1');
+      charityEl.innerHTML = charities.length
+        ? charities.map(charityTile).join('')
+        : emptyState('No causes yet', 'Check back soon.');
+    } catch (e) {
+      charityEl.innerHTML = emptyState('Could not load causes', e.message);
+    }
+  }
+
   /* ---- recent activity feed ---- */
   const activityEl = document.getElementById('recentActivity');
   if (activityEl) {

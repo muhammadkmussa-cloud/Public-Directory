@@ -83,6 +83,24 @@ window.mockApi = (function () {
 
   const CITIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Lamu'];
 
+  const CHARITIES = [
+    { id: 1, name: 'Ihsan Foundation', slug: 'ihsan-foundation', category: 'orphan', city: 'Nairobi', is_verified: 1, logo_path: 'assets/img/sample/charity-ihsan.svg', cover_photo: 'assets/img/sample/charity-ihsan.svg', description: 'Ihsan Foundation supports orphans and vulnerable children across Kenya with education sponsorships, food baskets and guardianship programs.', phone: '+254 722 000 111', whatsapp: '+254722000111', email: 'info@ihsanfoundation.or.ke', website: 'https://ihsanfoundation.or.ke', paybill_number: '522533', raised: 313000, donors: 127 },
+    { id: 2, name: 'Nuru Medical Fund', slug: 'nuru-medical-fund', category: 'health', city: 'Nairobi', is_verified: 1, logo_path: 'assets/img/sample/charity-nuru.svg', cover_photo: 'assets/img/sample/charity-nuru.svg', description: 'Nuru Medical Fund raises funds for life-saving surgeries and treatments for families who cannot afford hospital care.', phone: '+254 700 222 333', whatsapp: '+254700222333', email: 'care@nurumedical.org', website: 'https://nurumedical.org', paybill_number: '522544', raised: 890000, donors: 312 },
+    { id: 3, name: 'Ummah Relief', slug: 'ummah-relief', category: 'emergency', city: 'Mombasa', is_verified: 1, logo_path: 'assets/img/sample/charity-relief.svg', cover_photo: 'assets/img/sample/charity-relief.svg', description: 'Rapid-response relief for families affected by floods, drought and emergencies — food, shelter and clean water.', phone: '+254 733 444 555', whatsapp: '+254733444555', email: 'relief@ummahrelief.org', website: 'https://ummahrelief.org', paybill_number: '522555', raised: 120000, donors: 64 },
+  ];
+  const CAMPAIGNS = {
+    1: [
+      { id: 1, title: 'Ramadan Food Baskets 2026', description: 'Provide a 30-day food basket to 500 families this Ramadan.', goal_amount: 500000, raised: 215000, donors: 86, progress: 43, end_date: new Date(Date.now() + 86400000 * 20).toISOString().slice(0,10) },
+      { id: 2, title: 'Orphan Education Sponsorship', description: 'Sponsor school fees, uniforms and books for 40 orphans.', goal_amount: 400000, raised: 98000, donors: 41, progress: 25, end_date: null },
+    ],
+    2: [
+      { id: 3, title: "Aziz's Heart Surgery", description: 'Help 4-year-old Aziz undergo life-saving open-heart surgery.', goal_amount: 1200000, raised: 890000, donors: 312, progress: 74, end_date: null },
+    ],
+    3: [
+      { id: 4, title: 'Flood Relief — Tana River', description: 'Emergency food, clean water and shelter for 300 families.', goal_amount: 800000, raised: 120000, donors: 64, progress: 15, end_date: new Date(Date.now() + 86400000 * 30).toISOString().slice(0,10) },
+    ],
+  };
+
   function prayerTimes(lat) {
     const fajr = '05:' + (10 + (lat > 0 ? 2 : 0));
     return { Fajr: fajr, Sunrise: '06:30', Dhuhr: '12:30', Asr: '15:45', Maghrib: '18:' + (30 + (lat > 0 ? 2 : 0)), Isha: '19:45', date: new Date().toISOString().slice(0, 10) };
@@ -273,6 +291,27 @@ window.mockApi = (function () {
       if (b.action === 'claim') return { claimed: true };
       if (b.action === 'respond') return { responded: true };
       if (b.action === 'update') return { updated: true };
+    }
+
+    if (path.startsWith('api/charities.php')) {
+      if (url.searchParams.has('id')) {
+        const c = CHARITIES.find(x => String(x.id) === url.searchParams.get('id')) || CHARITIES[0];
+        return { charity: c, raised: c.raised, donors: c.donors, campaigns: CAMPAIGNS[c.id] || [] };
+      }
+      if (url.searchParams.has('top')) return CHARITIES;
+      return { items: CHARITIES, total: CHARITIES.length, page: 1, pages: 1, categories: [...new Set(CHARITIES.map(c => c.category))].map(c => ({ category: c, total: 1 })) };
+    }
+
+    if (path.startsWith('api/donations.php')) {
+      const b = parseBody(opts);
+      if (b.payment_method === 'mpesa') return { donation_id: 99, status: 'completed', amount: b.amount, payment: { provider: 'mpesa', phone: b.donor_phone, simulated: true }, payment_url: null, message: 'Thank you for your donation! 🙏' };
+      if (b.payment_method === 'paypal') return { donation_id: 99, status: 'pending', amount: b.amount, payment: { provider: 'paypal' }, payment_url: 'https://www.sandbox.paypal.com/cgi-bin/webscr', message: 'Donation recorded — please complete the payment to finalize it.' };
+      return { donation_id: 99, status: 'pending', amount: b.amount, payment: { provider: 'bank' }, payment_url: null, message: 'Donation recorded — please complete the bank transfer to finalize your donation.' };
+    }
+
+    if (path.startsWith('api/quotes.php')) {
+      const b = parseBody(opts);
+      return { quote_id: 7, whatsapp_link: 'https://wa.me/254712888999?text=' + encodeURIComponent("Salaam! I'm " + (b.name || '') + ". I'd like a quote for:\n\n" + (b.description || '')), fundi_name: 'Abdullahi Said', fundi_wa: '254712888999', message: 'Request saved — send it to Abdullahi Said on WhatsApp' };
     }
 
     throw Object.assign(new Error('Not found in mock: ' + path), { status: 404 });

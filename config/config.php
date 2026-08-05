@@ -29,6 +29,18 @@ define('MAX_FILE_SIZE', 5 * 1024 * 1024);   // 5MB
 define('UPLOAD_PATH', dirname(__DIR__) . '/uploads/');
 define('ALLOWED_IMAGE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
+// ---- Payments (M-Pesa Daraja + PayPal) ------------------------------------
+// Leave M-Pesa credentials empty to run in sandbox/simulation mode.
+define('MPESA_CONSUMER_KEY', '');
+define('MPESA_CONSUMER_SECRET', '');
+define('MPESA_PASSKEY', '');
+define('MPESA_SHORTCODE', '174379');
+define('MPESA_ENV', 'sandbox');                     // 'sandbox' | 'production'
+define('MPESA_CALLBACK_URL', APP_URL . '/api/donations.php?action=mpesa_callback');
+
+define('PAYPAL_MODE', 'sandbox');                   // 'sandbox' | 'live'
+define('PAYPAL_BUSINESS_EMAIL', 'your-paypal-business@example.com');
+
 // ---- Error reporting ------------------------------------------------------
 if (APP_ENV === 'development') {
     error_reporting(E_ALL);

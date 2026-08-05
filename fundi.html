@@ -25,6 +25,38 @@
 
   <div id="site-footer"></div>
 
+  <!-- Quote request modal (delivered via WhatsApp) -->
+  <div class="modal-overlay" id="quoteModal" role="dialog" aria-modal="true" aria-labelledby="quoteModalTitle">
+    <div class="modal">
+      <button class="modal-close" data-close-quote aria-label="Close">×</button>
+      <h2 id="quoteModalTitle">Request a quote</h2>
+      <div id="quoteAlert"></div>
+      <form id="quoteForm">
+        <input type="hidden" id="qtFundiId" name="fundi_id">
+        <div class="form-group">
+          <label for="qtName">Your name</label>
+          <input type="text" id="qtName" name="name" required maxlength="100" placeholder="Amina Hassan">
+        </div>
+        <div class="form-group">
+          <label for="qtPhone">Your phone</label>
+          <input type="tel" id="qtPhone" name="phone" required placeholder="07XX XXX XXX">
+        </div>
+        <div class="form-group">
+          <label for="qtDesc">What do you need done?</label>
+          <textarea id="qtDesc" name="description" rows="4" required maxlength="2000" placeholder="Describe the job…" style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--border-2);border-radius:6px;font:inherit;outline:none;"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="quoteBtn">Request quote</button>
+      </form>
+      <div id="quoteSuccess" hidden style="margin-top:1rem;text-align:center;">
+        <p class="muted small" style="margin-bottom:.8rem;">Tap below to send your request to <b id="quoteFundiName"></b> on WhatsApp:</p>
+        <a class="btn btn-primary btn-block" id="quoteWaLink" href="#" target="_blank" rel="noopener">
+          <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.7-.3-3.9-.9L3 21l1.9-5.1A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 9.5c.3 2 1.5 3.2 3.5 3.5l1-1 1.5 1v1.5c0 .6-.5 1-1.1 1A7 7 0 0 1 8 10.1c0-.6.4-1.1 1-1.1h1.5l1 1z"/></svg>
+          Send via WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
   <!-- Write review modal -->
   <div class="modal-overlay" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
     <div class="modal">

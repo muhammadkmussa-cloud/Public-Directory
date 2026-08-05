@@ -688,6 +688,8 @@ CREATE TABLE `reports` (
 
 -- ============================================
 -- 14. MESSAGES (Business-Fundi Communication)
+-- NOTE: messaging is delivered via WhatsApp (wa.me links) — this table is
+-- kept for record-keeping/reference only and is not wired to the UI.
 -- ============================================
 
 CREATE TABLE `messages` (
@@ -706,6 +708,28 @@ CREATE TABLE `messages` (
   KEY `created_at` (`created_at`),
   FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- 15. QUOTE REQUESTS (fundis)
+-- Communication happens on WhatsApp: the site builds a wa.me link with the
+-- request pre-filled; the request is stored here for tracking.
+-- ============================================
+
+CREATE TABLE `quote_requests` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `fundi_id` INT(11) UNSIGNED NOT NULL,
+  `user_id` INT(11) UNSIGNED DEFAULT NULL,
+  `customer_name` VARCHAR(100) NOT NULL,
+  `customer_phone` VARCHAR(20) NOT NULL,
+  `description` TEXT NOT NULL,
+  `status` ENUM('pending', 'contacted', 'completed', 'cancelled') DEFAULT 'pending',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fundi_id` (`fundi_id`),
+  KEY `status` (`status`),
+  FOREIGN KEY (`fundi_id`) REFERENCES `fundis`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================

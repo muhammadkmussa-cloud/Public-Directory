@@ -182,6 +182,7 @@ const HEADER_HTML = `
       <a class="nav-link" href="businesses.html">Businesses</a>
       <a class="nav-link" href="mosques.html">Mosques</a>
       <a class="nav-link" href="fundis.html">Fundis</a>
+      <a class="nav-link" href="charities.html">Charities</a>
       <a class="btn btn-primary btn-write" href="businesses.html">${icon('pen', 14)} Write a Review</a>
       <div class="nav-auth" id="navAuth"></div>
     </div>
@@ -206,6 +207,7 @@ const FOOTER_HTML = `
       <a href="businesses.html">Businesses</a>
       <a href="mosques.html">Mosques</a>
       <a href="fundis.html">Fundis</a>
+      <a href="charities.html">Charities</a>
     </div>
     <div class="footer-col">
       <h4>Account</h4>
@@ -498,6 +500,33 @@ function mosqueTile(m) {
       <div class="tile-loc">${icon('pin', 12)} ${esc(m.city || '')}</div>
     </div>
   </article>`;
+}
+
+/* ---- charity cards ---- */
+const CHARITY_CATEGORY_LABEL = c => String(c || '').replace(/_/g, ' ');
+
+function charityCard(c) {
+  return `
+  <article class="card tile-card">
+    <a class="tile-media" href="charity.html?id=${c.id}">
+      ${c.cover_photo
+        ? `<img src="${esc(c.cover_photo)}" alt="${esc(c.name)}" loading="lazy">`
+        : `<div class="media-placeholder">${icon('heart', 34)}</div>`}
+      ${c.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
+    </a>
+    <div class="tile-body">
+      <h3 class="tile-title"><a href="charity.html?id=${c.id}">${esc(c.name)}</a></h3>
+      <div class="tile-loc">${esc(CHARITY_CATEGORY_LABEL(c.category))} · ${esc(c.city || '')}</div>
+      <div class="campaign-stats" style="margin-top:.3rem;">
+        <span><b>${fmtMoney(c.raised)}</b> raised</span>
+        <span>${c.donors} donors</span>
+      </div>
+    </div>
+  </article>`;
+}
+
+function charityTile(c) {
+  return charityCard(c);
 }
 
 function fundiTile(f) {

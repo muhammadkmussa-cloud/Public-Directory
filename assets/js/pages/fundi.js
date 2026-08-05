@@ -73,6 +73,7 @@ window.appReady.then(async () => {
         <div class="detail-actions">
           ${f.phone ? `<a class="btn btn-primary" href="tel:${esc(f.phone)}">${icon('phone', 14)} Call</a>` : ''}
           ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
+          <button class="btn btn-primary" id="quoteBtnTop">${icon('pen', 14)} Request a quote</button>
           ${f.hourly_rate_min ? `<a class="btn btn-ghost">${icon('clock', 14)} ${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}/hr</a>` : ''}
         </div>
       </div>
@@ -137,6 +138,51 @@ window.appReady.then(async () => {
     `;
 
     document.getElementById('writeReviewBtn').addEventListener('click', () => openModal('fundi', f.id));
+
+    /* ---- quote request (via WhatsApp) ---- */
+    const quoteModal = document.getElementById('quoteModal');
+    const openQuote = () => {
+      document.getElementById('qtFundiId').value = f.id;
+      document.getElementById('quoteAlert').innerHTML = '';
+      document.getElementById('quoteSuccess').hidden = true;
+      document.getElementById('quoteForm').style.display = '';
+      document.getElementById('quoteBtn').style.display = '';
+      quoteModal.classList.add('open');
+    };
+    document.getElementById('quoteBtnTop').addEventListener('click', openQuote);
+
+    document.getElementById('quoteForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('quoteBtn');
+      const alertBox = document.getElementById('quoteAlert');
+      btn.disabled = true;
+      try {
+        const res = await api('api/quotes.php', {
+          method: 'POST',
+          body: {
+            fundi_id: document.getElementById('qtFundiId').value,
+            name: document.getElementById('qtName').value.trim(),
+            phone: document.getElementById('qtPhone').value.trim(),
+            description: document.getElementById('qtDesc').value.trim(),
+          },
+        });
+        document.getElementById('quoteFundiName').textContent = res.fundi_name;
+        const wa = document.getElementById('quoteWaLink');
+        wa.href = res.whatsapp_link;
+        document.getElementById('quoteForm').style.display = 'none';
+        document.getElementById('quoteSuccess').hidden = false;
+        toast(res.message || 'Request ready!');
+      } catch (err) {
+        alertBox.innerHTML = `<div class="alert alert-error">${esc(err.message || 'Could not create request')}</div>`;
+      }
+      btn.disabled = false;
+    });
+
+    document.addEventListener('click', (ev) => {
+      if (ev.target === quoteModal) quoteModal.classList.remove('open');
+      if (ev.target.closest('[data-close-quote]')) quoteModal.classList.remove('open');
+    });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') quoteModal.classList.remove('open'); });
   }
 
   function openModal(type, id) {

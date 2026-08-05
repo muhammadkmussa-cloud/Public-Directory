@@ -103,6 +103,9 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/reports.php` | POST | `{action: create, reportable_id, reportable_type, reason, description}` (login + CSRF) |
 | `api/businesses.php?action=mine` | GET | your claimed listings + pending responses (login) |
 | `api/businesses.php` | POST | `{action: claim\|respond\|update, ...}` — owner tools (login + CSRF) |
+| `api/charities.php` / `?id=N` / `?top=1` | GET | charities list / detail + campaigns / homepage |
+| `api/donations.php` | POST | `{charity_id, campaign_id?, amount, payment_method: mpesa\|paypal\|bank, ...}` (CSRF) |
+| `api/quotes.php` | POST | `{fundi_id, name, phone, description}` → stores request + returns a pre-filled WhatsApp link (CSRF) |
 
 State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), which the frontend attaches automatically.
 
@@ -118,6 +121,13 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 
 ## Built
 
+- **Charities & donations** — verified charities with campaigns and progress
+  bars; donate via M-Pesa STK push (Daraja; sandbox simulates when no
+  credentials are set), PayPal checkout link, or bank transfer. M-Pesa and
+  PayPal credentials live in `config/config.php`.
+- **Fundi quote requests via WhatsApp** — request form stores the request and
+  opens WhatsApp with a pre-filled message to the fundi's number (messaging is
+  WhatsApp-only by design; the `messages` table is unused).
 - **Owner dashboard** (`dashboard.html`) — claim listings, edit your business
   (name, contact, price, descriptions), respond to customer reviews, see
   pending responses + per-listing stats (rating, check-ins).
