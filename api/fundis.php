@@ -47,7 +47,7 @@ if (isset($_GET['id'])) {
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'useful\') AS useful_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'funny\')  AS funny_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'cool\')   AS cool_count,
-                u.full_name, u.profile_photo
+                u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
            FROM reviews r
            JOIN users u ON u.id = r.user_id
           WHERE r.reviewable_id = ? AND r.reviewable_type = \'fundi\' AND r.is_approved = 1 AND r.is_hidden = 0
@@ -68,7 +68,7 @@ if (isset($_GET['id'])) {
 if (isset($_GET['top'])) {
     $rows = $db->fetchAll(
         'SELECT f.id, f.profession, f.city, f.is_verified, f.rating_average, f.review_count,
-                f.hourly_rate_min, f.skills, u.full_name, u.profile_photo
+                f.hourly_rate_min, f.skills, u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
            FROM fundis f
            JOIN users u ON u.id = f.user_id
           WHERE f.is_available = 1 AND f.is_verified = 1
@@ -116,7 +116,7 @@ $items = $db->fetchAll(
     "SELECT f.id, f.profession, f.profession_other, f.years_experience, f.city, f.region,
             f.is_verified, f.rating_average, f.review_count, f.hourly_rate_min,
             f.hourly_rate_max, f.skills, f.phone, f.whatsapp,
-            u.full_name, u.profile_photo
+            u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
        FROM fundis f
        JOIN users u ON u.id = f.user_id
       WHERE $whereSql

@@ -24,9 +24,10 @@
       </div>
 
       <form class="filters" id="filtersForm">
-        <div class="filter">
+        <div class="filter autocomplete-wrap">
           <label for="f-q">Search</label>
-          <input type="text" id="f-q" name="q" placeholder="Restaurant, butcher, pharmacy…">
+          <input type="text" id="f-q" name="q" placeholder="Restaurant, butcher, pharmacy…" autocomplete="off">
+          <div class="autocomplete" id="bizSuggest"></div>
         </div>
         <div class="filter">
           <label for="f-category">Category</label>

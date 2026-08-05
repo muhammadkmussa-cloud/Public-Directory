@@ -98,6 +98,11 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/favorites.php?action=status` | GET | `?favoritable_id=&favoritable_type=` → `{saved}` (login) |
 | `api/favorites.php` | POST | `{action: toggle, favoritable_id, favoritable_type}` (login + CSRF) |
 | `api/upload.php` | POST | multipart `image` + `dir` → secure upload (login + CSRF) |
+| `api/suggest.php?q=` | GET | autocomplete suggestions (businesses/mosques/fundis/categories) |
+| `api/activity.php` | GET | recent reviews feed for the homepage |
+| `api/reports.php` | POST | `{action: create, reportable_id, reportable_type, reason, description}` (login + CSRF) |
+| `api/businesses.php?action=mine` | GET | your claimed listings + pending responses (login) |
+| `api/businesses.php` | POST | `{action: claim\|respond\|update, ...}` — owner tools (login + CSRF) |
 
 State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), which the frontend attaches automatically.
 
@@ -113,6 +118,16 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 
 ## Built
 
+- **Owner dashboard** (`dashboard.html`) — claim listings, edit your business
+  (name, contact, price, descriptions), respond to customer reviews, see
+  pending responses + per-listing stats (rating, check-ins).
+- **Search autocomplete** — debounced suggestions on the homepage search and
+  the businesses search (businesses, mosques, fundis, categories).
+- **Report & moderation** — flag reviews or listings with a reason; stored in
+  the `reports` table for admin review.
+- **Badges & contributor levels** — verification badges (verified / premium /
+  top contributor) and levels shown on reviews and profiles.
+- **Recent Activity feed** on the homepage — the latest community reviews.
 - **Map view** — Leaflet + OpenStreetMap: interactive map on search results
   (List/Map toggle with pins + popups) and embedded location maps on business,
   mosque and fundi pages.

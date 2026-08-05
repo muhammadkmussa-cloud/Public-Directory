@@ -24,6 +24,8 @@ window.appReady.then(async () => {
   const openEl = document.getElementById('f-open');
   if (openEl && params.get('open_now')) openEl.checked = true;
 
+  wireAutocomplete(document.getElementById('f-q'), document.getElementById('bizSuggest'));
+
   function formData() {
     const fd = new FormData(form);
     const out = {};

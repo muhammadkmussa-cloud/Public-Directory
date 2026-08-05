@@ -108,6 +108,7 @@ window.appReady.then(async () => {
           ${b.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
           <button class="btn btn-ghost save-btn" data-save-type="business" data-save-id="${b.id}">${icon('bookmark', 14)} Save</button>
           <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
+          <button class="btn btn-ghost report-btn" data-report-type="business" data-report-id="${b.id}">${icon('flag', 14)} Report</button>
         </div>
       </div>
 

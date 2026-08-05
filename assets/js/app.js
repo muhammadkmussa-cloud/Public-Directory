@@ -38,6 +38,9 @@ const ICONS = {
   grid: '<circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/>',
   bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
   bookmarkFill: '<path fill="currentColor" stroke="currentColor" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+  trophy: '<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h3"/><path d="M17 6h3a2 2 0 0 1 0 4h-3"/>',
+  starBadge: '<path d="M12 2l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 19.9l1.1-6.5L2.6 8.8l6.5-.9L12 2z"/>',
 };
 
 const CATEGORY_ICONS = {
@@ -254,6 +257,7 @@ function renderAuthNav() {
       <a class="nav-link user-chip" href="profile.html">
         <span class="avatar">${initial}</span> ${esc(u.full_name || u.username)}
       </a>
+      <a class="nav-link" href="dashboard.html">Dashboard</a>
       <button class="btn btn-ghost" id="logoutBtn">Logout</button>`;
     const lb = document.getElementById('logoutBtn');
     if (lb) lb.addEventListener('click', async () => {
@@ -523,6 +527,18 @@ const REACTIONS = [
   ['cool', 'cool', 'Cool'],
 ];
 
+/** Contributor badge chip for a user (Yelp-style "elite"/level badges) */
+function contributorBadge(u) {
+  if (!u) return '';
+  const badge = u.verification_badge && u.verification_badge !== 'none'
+    ? `<span class="contrib-badge badge-${esc(u.verification_badge)}" title="${esc(u.verification_badge.replace('_', ' '))} contributor">${icon('trophy', 11)} ${esc(u.verification_badge.replace('_', ' '))}</span>`
+    : '';
+  const level = (u.contributor_level || 1) > 1
+    ? `<span class="contrib-badge contrib-level" title="Contributor level ${u.contributor_level}">${icon('starBadge', 11)} Lv ${u.contributor_level}</span>`
+    : '';
+  return badge + level;
+}
+
 function reviewCard(r) {
   const u = r.user || {};
   const initial = esc((u.full_name || 'U').charAt(0).toUpperCase());
@@ -539,6 +555,7 @@ function reviewCard(r) {
           : `<span class="avatar">${initial}</span>`}
         <div>
           <div class="reviewer-name">${esc(u.full_name || 'User')}</div>
+          <div class="contrib-row">${contributorBadge(u)}</div>
           <div class="muted small">${timeAgo(r.created_at)}</div>
         </div>
       </div>
@@ -548,7 +565,10 @@ function reviewCard(r) {
     <p class="review-text">${esc(r.content || '')}</p>
     ${(r.photos && r.photos.length) ? `<div class="review-photos">${r.photos.map(p => `<img src="${esc(p)}" alt="Review photo" loading="lazy">`).join('')}</div>` : ''}
     ${r.owner_response ? `<div class="owner-response"><b>Owner response:</b> ${esc(r.owner_response)}</div>` : ''}
-    <div class="review-actions">${reactions}</div>
+    <div class="review-actions">
+      ${reactions}
+      <button class="reaction-btn report-btn" data-report-type="review" data-report-id="${r.id}">${icon('flag', 13)} Report</button>
+    </div>
   </article>`;
 }
 
@@ -647,6 +667,147 @@ function paginationHtml(page, pages, baseQuery) {
 
 function emptyState(title, sub, cta) {
   return `<div class="empty-state"><div class="empty-icon">${icon('search', 36)}</div><h3>${esc(title)}</h3><p>${esc(sub)}</p>${cta || ''}</div>`;
+}
+
+/* ============================================================
+ * Report modal (shared)
+ * ============================================================ */
+const REPORT_REASONS = ['spam', 'fake', 'inappropriate', 'scam', 'duplicate', 'closed', 'other'];
+
+function openReportModal(type, id) {
+  if (!session.user) {
+    toast('Please login to report', 'error');
+    setTimeout(() => (window.location.href = 'login.html'), 700);
+    return;
+  }
+  let overlay = document.getElementById('reportModal');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'reportModal';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <button class="modal-close" data-close-report aria-label="Close">×</button>
+        <h2>Report this content</h2>
+        <p class="muted small" style="margin-bottom:1rem;">Help us keep the community safe. Our moderators will review your report.</p>
+        <form id="reportForm">
+          <input type="hidden" id="repId">
+          <input type="hidden" id="repType">
+          <div class="form-group">
+            <label for="repReason">Reason</label>
+            <select id="repReason" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border-2);border-radius:5px;font:inherit;">
+              ${REPORT_REASONS.map(r => `<option value="${r}">${r.charAt(0).toUpperCase() + r.slice(1)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="repDesc">Details (optional)</label>
+            <textarea id="repDesc" rows="3" maxlength="1000" placeholder="Tell us what's wrong…" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border-2);border-radius:5px;font:inherit;outline:none;"></textarea>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="reportSubmit">Submit report</button>
+        </form>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+      if (e.target.closest('[data-close-report]')) overlay.classList.remove('open');
+    });
+    overlay.querySelector('#reportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('reportSubmit');
+      btn.disabled = true;
+      try {
+        await api('api/reports.php', {
+          method: 'POST',
+          body: {
+            action: 'create',
+            reportable_id: document.getElementById('repId').value,
+            reportable_type: document.getElementById('repType').value,
+            reason: document.getElementById('repReason').value,
+            description: document.getElementById('repDesc').value,
+          },
+        });
+        toast('Report submitted — thank you!');
+        overlay.classList.remove('open');
+        btn.disabled = false;
+      } catch (err) {
+        toast(err.message || 'Could not submit report', 'error');
+        btn.disabled = false;
+      }
+    });
+  }
+  document.getElementById('repId').value = id;
+  document.getElementById('repType').value = type;
+  document.getElementById('repDesc').value = '';
+  overlay.classList.add('open');
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.report-btn');
+  if (!btn) return;
+  e.preventDefault();
+  openReportModal(btn.dataset.reportType, btn.dataset.reportId);
+});
+
+/* ============================================================
+ * Search autocomplete
+ * ============================================================ */
+/** Wire an input + dropdown element to show suggestions under it. */
+function wireAutocomplete(inputEl, dropdownEl) {
+  if (!inputEl || !dropdownEl) return;
+  let timer = null;
+  const close = () => { dropdownEl.classList.remove('open'); dropdownEl.innerHTML = ''; };
+  inputEl.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = inputEl.value.trim();
+    if (q.length < 2) { close(); return; }
+    timer = setTimeout(async () => {
+      try {
+        const items = await api('api/suggest.php?q=' + encodeURIComponent(q));
+        if (!items.length) {
+          dropdownEl.innerHTML = '<div class="suggest-empty">No matches</div>';
+          dropdownEl.classList.add('open');
+          return;
+        }
+        dropdownEl.innerHTML = items.map(it => `
+          <a class="suggest-item" href="${esc(it.url)}">
+            <span class="suggest-icon">${icon(it.type === 'business' ? 'bag' : it.type === 'mosque' ? 'mosque' : it.type === 'fundi' ? 'wrench' : 'grid', 15)}</span>
+            <span class="suggest-text">
+              <b>${esc(it.label)}</b>
+              <span class="muted small">${esc(it.sub)}</span>
+            </span>
+          </a>`).join('');
+        dropdownEl.classList.add('open');
+      } catch (e) { /* ignore */ }
+    }, 220);
+  });
+  inputEl.addEventListener('focus', () => { if (dropdownEl.innerHTML) dropdownEl.classList.add('open'); });
+  document.addEventListener('click', (e) => {
+    if (!dropdownEl.contains(e.target) && !inputEl.contains(e.target)) close();
+  });
+  return close;
+}
+
+/* ============================================================
+ * Recent activity (homepage feed)
+ * ============================================================ */
+function activityItem(a) {
+  const u = a.user_name || 'User';
+  const initial = esc(u.charAt(0).toUpperCase());
+  return `
+  <div class="activity-item">
+    <span class="avatar">${a.profile_photo ? `<img src="${esc(a.profile_photo)}" alt="">` : initial}</span>
+    <div class="activity-body">
+      <div>
+        <b>${esc(u)}</b> reviewed <a href="${esc(a.listing_url)}"><b>${esc(a.listing_name)}</b></a>
+        <span class="muted small">· ${timeAgo(a.created_at)}</span>
+      </div>
+      <div class="activity-review">
+        ${starsHtml(a.rating)}
+        <span class="activity-title">${esc(a.title || '')}</span>
+      </div>
+      <p class="activity-text">${esc(a.content || '')}</p>
+    </div>
+  </div>`;
 }
 
 /* ============================================================

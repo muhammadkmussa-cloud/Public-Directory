@@ -11,6 +11,101 @@ require_method('GET');
 
 $db = Database::getInstance();
 
+/* ================= owner dashboard actions (POST) ================= */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $user = require_login();
+    require_csrf();
+    $body = json_body();
+    $action = $body['action'] ?? ($_GET['action'] ?? '');
+
+    /* ---- claim a listing ---- */
+    if ($action === 'claim') {
+        $id = (int)($body['business_id'] ?? 0);
+        $biz = $db->fetchOne('SELECT id, user_id, is_claimed FROM businesses WHERE id = ?', [$id]);
+        if (!$biz) json_err('Business not found', 404);
+        if ($biz['is_claimed'] && $biz['user_id']) json_err('This listing is already claimed', 409);
+        $db->execute(
+            'UPDATE businesses SET user_id = ?, is_claimed = 1, claimed_at = NOW() WHERE id = ?',
+            [$user['id'], $id]
+        );
+        json_ok(['claimed' => true]);
+    }
+
+    /* ---- respond to a review (owner or admin) ---- */
+    if ($action === 'respond') {
+        $reviewId = (int)($body['review_id'] ?? 0);
+        $response = trim($body['response'] ?? '');
+        if (mb_strlen($response) < 2 || mb_strlen($response) > 2000) {
+            json_err('Response must be 2–2000 characters', 422);
+        }
+        $review = $db->fetchOne('SELECT * FROM reviews WHERE id = ?', [$reviewId]);
+        if (!$review) json_err('Review not found', 404);
+        if ($review['reviewable_type'] !== 'business') json_err('Only business reviews can be answered', 422);
+
+        $biz = $db->fetchOne('SELECT user_id FROM businesses WHERE id = ?', [$review['reviewable_id']]);
+        $isOwner = $biz && (int)$biz['user_id'] === (int)$user['id'];
+        if (!$isOwner && $user['user_type'] !== 'admin') {
+            json_err('You can only respond to reviews on your own listings', 403);
+        }
+
+        $db->execute(
+            'UPDATE reviews SET owner_response = ?, owner_response_at = NOW() WHERE id = ?',
+            [$response, $reviewId]
+        );
+        json_ok(['responded' => true]);
+    }
+
+    /* ---- edit a listing (owner or admin) ---- */
+    if ($action === 'update') {
+        $id = (int)($body['business_id'] ?? 0);
+        $biz = $db->fetchOne('SELECT user_id FROM businesses WHERE id = ?', [$id]);
+        if (!$biz) json_err('Business not found', 404);
+        if ((int)$biz['user_id'] !== (int)$user['id'] && $user['user_type'] !== 'admin') {
+            json_err('You can only edit your own listings', 403);
+        }
+
+        $fields = ['name', 'short_description', 'description', 'phone', 'whatsapp', 'email', 'website', 'price_range', 'city', 'address'];
+        $sets = [];
+        $params = [];
+        foreach ($fields as $f) {
+            if (array_key_exists($f, $body)) {
+                $v = trim((string)$body[$f]);
+                if ($f === 'name' && $v === '') json_err('Name cannot be empty', 422);
+                if ($f === 'website' && $v !== '' && !preg_match('#^https?://#i', $v)) {
+                    $v = 'https://' . $v;
+                }
+                $sets[] = "$f = ?";
+                $params[] = $v === '' ? null : $v;
+            }
+        }
+        if (!$sets) json_err('Nothing to update', 422);
+        $params[] = $id;
+        $db->execute('UPDATE businesses SET ' . implode(', ', $sets) . ' WHERE id = ?', $params);
+        json_ok(['updated' => true]);
+    }
+
+    json_err('Unknown action', 404);
+}
+
+/* ================= owner listings (GET) ================= */
+if (isset($_GET['action']) && $_GET['action'] === 'mine') {
+    $user = require_login();
+    $where = $user['user_type'] === 'admin' ? '1=1' : 'b.user_id = ?';
+    $params = $user['user_type'] === 'admin' ? [] : [$user['id']];
+    $rows = $db->fetchAll(
+        "SELECT b.id, b.name, b.slug, b.city, b.price_range, b.is_claimed, b.is_verified,
+                b.rating_average, b.review_count, b.checkin_count, b.claimed_at,
+                (SELECT COUNT(*) FROM reviews r
+                  WHERE r.reviewable_id = b.id AND r.reviewable_type = 'business'
+                    AND r.owner_response IS NULL AND r.is_approved = 1) AS pending_responses
+           FROM businesses b
+          WHERE $where
+          ORDER BY b.is_claimed DESC, b.created_at DESC",
+        $params
+    );
+    json_ok($rows);
+}
+
 /* ================= detail ================= */
 if (isset($_GET['id'])) {
     $id = (int)$_GET['id'];
@@ -41,7 +136,7 @@ if (isset($_GET['id'])) {
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'useful\') AS useful_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'funny\')  AS funny_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'cool\')   AS cool_count,
-                u.full_name, u.profile_photo
+                u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
            FROM reviews r
            JOIN users u ON u.id = r.user_id
           WHERE r.reviewable_id = ? AND r.reviewable_type = \'business\' AND r.is_approved = 1 AND r.is_hidden = 0

@@ -31,7 +31,7 @@ if (isset($_GET['id'])) {
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'useful\') AS useful_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'funny\')  AS funny_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'cool\')   AS cool_count,
-                u.full_name, u.profile_photo
+                u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
            FROM reviews r
            JOIN users u ON u.id = r.user_id
           WHERE r.reviewable_id = ? AND r.reviewable_type = \'mosque\' AND r.is_approved = 1 AND r.is_hidden = 0

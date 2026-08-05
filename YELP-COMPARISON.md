@@ -130,12 +130,12 @@
 4. ✅ **Open-now filter** — computed live from `opening_hours`
 5. ✅ **Password reset** — forgot/reset pages + API
 
-**Tier 2 — makes it feel like a product (M–L):**
-6. **Owner dashboard**: claim listing, edit business, respond to reviews, view stats
-7. **Search autocomplete** (debounced suggestions from API)
-8. **Report review/listing** UI → `reports` table
-9. **Badges & contributor levels** surfaced on profile and reviews
-10. **Homepage "Recent Activity" feed** (latest reviews) — Yelp's signature homepage element
+**Tier 2 — ✅ DONE (2026-08-05):**
+6. ✅ **Owner dashboard** — claim, edit, respond to reviews, pending counts + stats
+7. ✅ **Search autocomplete** — debounced suggestions (businesses/mosques/fundis/categories)
+8. ✅ **Report review/listing** UI → `reports` table
+9. ✅ **Badges & contributor levels** on reviews and profiles
+10. ✅ **Homepage "Recent Activity" feed**
 
 **Tier 3 — the ecosystem (L):**
 11. Charities & donations (M-Pesa/PayPal/Stripe)

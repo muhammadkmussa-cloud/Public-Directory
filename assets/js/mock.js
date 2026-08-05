@@ -77,8 +77,8 @@ window.mockApi = (function () {
   ];
 
   const REVIEWS = [
-    { id: 1, rating: 5, title: 'Best biryani in Nairobi!', content: 'The chicken biryani is incredible and the family seating is very private and comfortable. Staff are so welcoming. Highly recommended for iftar too.', helpful_count: 12, useful_count: 12, funny_count: 4, cool_count: 2, photos: ['assets/img/sample/restaurant-1.svg', 'assets/img/sample/fundi-plumber-2.svg'], created_at: new Date(Date.now() - 86400000 * 12).toISOString(), user: { full_name: 'Amina Hassan', profile_photo: '' } },
-    { id: 2, rating: 4, title: 'Great food, busy at peak hours', content: 'Delicious samosas and the mandazi are fresh all day. Gets crowded on Friday evenings - go early!', helpful_count: 5, useful_count: 5, funny_count: 8, cool_count: 1, photos: ['assets/img/sample/restaurant-2.svg'], created_at: new Date(Date.now() - 86400000 * 5).toISOString(), user: { full_name: 'Yusuf Omar', profile_photo: '' } },
+    { id: 1, rating: 5, title: 'Best biryani in Nairobi!', content: 'The chicken biryani is incredible and the family seating is very private and comfortable. Staff are so welcoming. Highly recommended for iftar too.', helpful_count: 12, useful_count: 12, funny_count: 4, cool_count: 2, photos: ['assets/img/sample/restaurant-1.svg', 'assets/img/sample/fundi-plumber-2.svg'], created_at: new Date(Date.now() - 86400000 * 12).toISOString(), user: { full_name: 'Amina Hassan', profile_photo: '', contributor_level: 3, verification_badge: 'top_contributor' } },
+    { id: 2, rating: 4, title: 'Great food, busy at peak hours', content: 'Delicious samosas and the mandazi are fresh all day. Gets crowded on Friday evenings - go early!', helpful_count: 5, useful_count: 5, funny_count: 8, cool_count: 1, photos: ['assets/img/sample/restaurant-2.svg'], created_at: new Date(Date.now() - 86400000 * 5).toISOString(), user: { full_name: 'Yusuf Omar', profile_photo: '', contributor_level: 2, verification_badge: 'verified' } },
   ];
 
   const CITIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Lamu'];
@@ -131,6 +131,13 @@ window.mockApi = (function () {
         return { ok: true, message: 'Password reset successfully — you can now login' };
       }
       throw Object.assign(new Error('Unknown action'), { status: 404 });
+    }
+
+    if (path.startsWith('api/businesses.php') && action === 'mine') {
+      if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+      return [
+        { id: 1, name: 'Al-Barakah Restaurant', slug: 'al-barakah-restaurant', city: 'Nairobi', price_range: '$$', is_claimed: 1, is_verified: 1, rating_average: 4.5, review_count: 2, checkin_count: 34, pending_responses: 1 },
+      ];
     }
 
     if (path.startsWith('api/businesses.php')) {
@@ -225,6 +232,47 @@ window.mockApi = (function () {
         if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
         return { status: b.status || 'paused', deleted: b.action === 'delete' };
       }
+    }
+
+    if (path.startsWith('api/suggest.php')) {
+      const q = (url.searchParams.get('q') || '').toLowerCase();
+      if (q.length < 2) return [];
+      const out = [];
+      BUSINESSES.filter(b => b.name.toLowerCase().includes(q)).slice(0, 3).forEach(b =>
+        out.push({ type: 'business', label: b.name, sub: 'Business · ' + b.city, url: 'business.html?id=' + b.id }));
+      MOSQUES.filter(m => m.name.toLowerCase().includes(q)).slice(0, 3).forEach(m =>
+        out.push({ type: 'mosque', label: m.name, sub: 'Mosque · ' + m.city, url: 'mosque.html?id=' + m.id }));
+      FUNDIS.filter(f => (f.profession || '').toLowerCase().includes(q) || (f.full_name || '').toLowerCase().includes(q)).slice(0, 3).forEach(f =>
+        out.push({ type: 'fundi', label: f.full_name, sub: f.profession + ' · ' + f.city, url: 'fundi.html?id=' + f.id }));
+      CATEGORIES.filter(c => c.name.toLowerCase().includes(q)).slice(0, 2).forEach(c =>
+        out.push({ type: 'category', label: c.name, sub: 'Category', url: 'businesses.html?category=' + c.slug }));
+      return out.slice(0, 10);
+    }
+
+    if (path.startsWith('api/activity.php')) {
+      return REVIEWS.map(r => ({
+        id: r.id, rating: r.rating, title: r.title, content: r.content, created_at: r.created_at,
+        reviewable_id: 1, reviewable_type: 'business',
+        user_name: r.user.full_name, profile_photo: r.user.profile_photo || '',
+        contributor_level: r.user.contributor_level || 1, verification_badge: r.user.verification_badge || 'none',
+        listing_name: 'Al-Barakah Restaurant', listing_url: 'business.html?id=1', listing_type: 'business',
+      }));
+    }
+
+    if (path.startsWith('api/reports.php')) {
+      if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+      const b = parseBody(opts);
+      if (b.action === 'create') return { reported: true };
+      if (action === 'mine') return [];
+      throw Object.assign(new Error('Unknown action'), { status: 404 });
+    }
+
+    if (path.startsWith('api/businesses.php') && method === 'POST') {
+      if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+      const b = parseBody(opts);
+      if (b.action === 'claim') return { claimed: true };
+      if (b.action === 'respond') return { responded: true };
+      if (b.action === 'update') return { updated: true };
     }
 
     throw Object.assign(new Error('Not found in mock: ' + path), { status: 404 });

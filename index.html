@@ -23,9 +23,10 @@
         <p>Find trusted, reviewed places — from restaurants to skilled workers.</p>
 
         <form class="yelp-search" id="heroSearch" action="businesses.html" method="get">
-          <div class="search-field">
+          <div class="search-field autocomplete-wrap">
             <label for="hero-q">Find</label>
-            <input id="hero-q" type="text" name="q" placeholder="restaurants, plumbers, mosques…" aria-label="What are you looking for?">
+            <input id="hero-q" type="text" name="q" placeholder="restaurants, plumbers, mosques…" aria-label="What are you looking for?" autocomplete="off">
+            <div class="autocomplete" id="heroSuggest"></div>
           </div>
           <div class="search-field">
             <label for="hero-near">Near</label>
@@ -98,6 +99,19 @@
           <a class="btn btn-outline btn-sm" href="fundis.html">View all</a>
         </div>
         <div class="grid" id="topFundis"><!-- filled by home.js --></div>
+      </div>
+    </section>
+
+    <!-- Recent Activity (Yelp's signature homepage feed) -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Recent activity</h2>
+            <p class="sub">What the community is saying</p>
+          </div>
+        </div>
+        <div class="panel" id="recentActivity"><p class="muted">Loading…</p></div>
       </div>
     </section>
 

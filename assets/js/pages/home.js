@@ -63,6 +63,22 @@ window.appReady.then(async () => {
     fundiEl.innerHTML = emptyState('Could not load fundis', e.message);
   }
 
+  /* ---- recent activity feed ---- */
+  const activityEl = document.getElementById('recentActivity');
+  if (activityEl) {
+    try {
+      const feed = await api('api/activity.php');
+      activityEl.innerHTML = feed.length
+        ? feed.map(activityItem).join('')
+        : '<p class="muted center" style="padding:1.2rem 0;">No activity yet — be the first to write a review!</p>';
+    } catch (e) {
+      activityEl.innerHTML = '<p class="muted">Could not load activity.</p>';
+    }
+  }
+
+  /* ---- search autocomplete ---- */
+  wireAutocomplete(document.getElementById('hero-q'), document.getElementById('heroSuggest'));
+
   /* ---- stats (best-effort from list endpoints) ---- */
   try {
     const [biz, mosques, fundis] = await Promise.all([
