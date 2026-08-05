@@ -5,6 +5,18 @@
 
 window.appReady.then(async () => {
 
+  /* ---- sponsored strip (homepage header placement) ---- */
+  const strip = document.getElementById('sponsoredStrip');
+  if (strip) {
+    try {
+      const res = await api('api/ads.php?placement=homepage_header');
+      const ads = (res && res.ads) || [];
+      if (ads.length) {
+        strip.innerHTML = ads.map(ad => { recordAdImpression(ad.id); return sponsoredBanner(ad); }).join('');
+      }
+    } catch (e) { /* no ads — fine */ }
+  }
+
   /* ---- categories ---- */
   const chipsEl = document.getElementById('categoryChips');
   try {

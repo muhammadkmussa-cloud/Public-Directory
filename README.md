@@ -88,6 +88,10 @@ All responses: `{"success": true, "data": ...}` or `{"success": false, "error": 
 | `api/reviews.php?action=mine` | GET | your reviews (login) |
 | `api/reviews.php` | POST | `{action: create\|react\|delete, ...}` — react: `{reaction: useful\|funny\|cool}` (login + CSRF) |
 | `api/checkin.php` | POST | `{checkinable_id, checkinable_type, note}` (login + CSRF) |
+| `api/ads.php?placement=` | GET | active ads for a placement (`search_results`, `homepage_header`, `detail_page`, …) |
+| `api/ads.php` | POST | `{action: impression\|click, ad_id}` — track views/clicks (CSRF) |
+| `api/ads.php` | POST | `{action: create\|toggle\|delete, ...}` — manage ads (admin, CSRF) |
+| `api/ads.php?action=list` | GET | all ads + stats (admin) |
 
 State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), which the frontend attaches automatically.
 
@@ -101,10 +105,11 @@ State-changing endpoints require login and the CSRF header (`X-CSRF-Token`), whi
 - Review reactions (Useful / Funny / Cool) are stored per-user per-type in `review_helpful` (toggle).
 - Sample image files in `assets/img/sample/` are placeholders — replace with real photos in production (uploaded files go to `uploads/`, which is git-ignored).
 
-## Roadmap (not yet built)
+## Built
 
-- Charity & donation module (schema tables exist: `charities`, `campaigns`, `donations`)
-- Advertising system (tables exist: `ads`, `ad_placements`, impressions/clicks)
-- Business claiming / owner dashboard
+- **Sponsored ads** — Yelp-style sponsored results interleaved into search results,
+  homepage banner strip, and detail-page sidebar; impression & click tracking;
+  `admin.html` (admin-only) to create, pause and delete ads.
+- Business claiming / owner dashboard (schema supports it)
 - Photo uploads through `api/upload.php` (secure handler, ready to wire in)
 - Multilingual UI (EN / SW / AR)

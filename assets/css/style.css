@@ -446,6 +446,77 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.01em; color: var(--text); 
 .star-input input:checked ~ label, .star-input label:hover, .star-input label:hover ~ label { color: var(--red); }
 
 /* ============================================================
+   Sponsored ads (Yelp-style)
+   ============================================================ */
+.sponsored-tag {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ad-card { border: 1px solid var(--border); }
+.ad-card:hover { box-shadow: var(--shadow); }
+.ad-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 2rem;
+}
+
+/* homepage banner strip */
+.ad-banner {
+  position: relative; display: flex; align-items: center; gap: 1rem;
+  background: #fff; border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.65rem 0.9rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+  text-decoration: none; color: var(--text); overflow: hidden;
+}
+.ad-banner:hover { box-shadow: var(--shadow); text-decoration: none; }
+.ad-banner .sponsored-tag { position: absolute; top: 8px; right: 10px; }
+.ad-banner img, .ad-banner-ph {
+  width: 112px; height: 64px; object-fit: cover; border-radius: 5px; flex-shrink: 0;
+}
+.ad-banner-ph { display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; }
+.ad-banner-text b { display: block; font-size: 1rem; font-family: var(--font-display); }
+.ad-banner-text span { color: var(--text-2); font-size: 0.85rem; display: block; }
+@media (max-width: 560px) {
+  .ad-banner img, .ad-banner-ph { width: 72px; height: 56px; }
+}
+
+/* detail sidebar mini ads */
+.ad-mini {
+  display: flex; gap: 0.65rem; align-items: center; padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--border); text-decoration: none; color: var(--text);
+}
+.ad-mini:last-child { border-bottom: 0; }
+.ad-mini:hover { text-decoration: none; }
+.ad-mini img, .ad-mini-ph {
+  width: 52px; height: 52px; border-radius: 5px; object-fit: cover; flex-shrink: 0;
+}
+.ad-mini-ph { display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; }
+.ad-mini b { display: block; font-size: 0.88rem; line-height: 1.25; }
+.ad-mini:hover b { color: var(--red); }
+.ad-mini-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+/* admin manager */
+.ad-admin-row {
+  display: grid; grid-template-columns: 56px 1fr auto auto auto; gap: 0.9rem;
+  align-items: center; padding: 0.7rem 0; border-bottom: 1px solid var(--border);
+}
+.ad-admin-row:last-child { border-bottom: 0; }
+.ad-admin-row img, .ad-admin-ph {
+  width: 56px; height: 56px; border-radius: 6px; object-fit: cover;
+}
+.ad-admin-ph { display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+.ad-admin-info { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.ad-admin-info b { font-family: var(--font-display); }
+.ad-admin-stats { display: flex; gap: 0.9rem; color: var(--muted); font-size: 0.85rem; align-items: center; }
+.ad-admin-stats .ic { vertical-align: -0.2em; }
+.ad-admin-actions { display: flex; gap: 0.4rem; }
+.chip-on { background: #eaf6ea; color: #1d5c1d; }
+.chip-off { background: var(--bg-soft); color: var(--muted); }
+@media (max-width: 720px) {
+  .ad-admin-row { grid-template-columns: 44px 1fr; }
+  .ad-admin-row img, .ad-admin-ph { width: 44px; height: 44px; }
+  .ad-admin-stats, .ad-admin-actions { grid-column: 2; }
+}
+
+/* ============================================================
    Toasts
    ============================================================ */
 .toast-box { position: fixed; bottom: 1.2rem; right: 1.2rem; z-index: 200; display: flex; flex-direction: column; gap: 0.6rem; }

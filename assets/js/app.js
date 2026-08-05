@@ -211,6 +211,7 @@ const FOOTER_HTML = `
     <div class="footer-col">
       <h4>Project</h4>
       <a href="index.html">Home</a>
+      <a href="admin.html">Advertise</a>
       <a href="404.html">Report an issue</a>
     </div>
   </div>
@@ -467,6 +468,82 @@ function reviewCard(r) {
   </article>`;
 }
 
+/* ============================================================
+ * Sponsored ads (Yelp-style)
+ * ============================================================ */
+const AD_COLORS = ['#c2410c', '#0369a1', '#7c3aed', '#0d9488', '#be185d', '#4d7c0f', '#b45309', '#1d4ed8'];
+function adColor(id) { return AD_COLORS[Number(id) % AD_COLORS.length]; }
+
+/** Horizontal sponsored result card (search results) */
+function sponsoredCard(ad) {
+  return `
+  <article class="card result-card ad-card">
+    <a class="result-media" href="${esc(ad.link_url)}" data-ad-click="${ad.id}">
+      ${ad.image_path
+        ? `<img src="${esc(ad.image_path)}" alt="${esc(ad.title)}" loading="lazy">`
+        : `<div class="media-placeholder ad-placeholder" style="background:${adColor(ad.id)}">${esc((ad.title || 'A').charAt(0).toUpperCase())}</div>`}
+    </a>
+    <div class="result-body">
+      <span class="sponsored-tag">Sponsored</span>
+      <h3 class="result-title"><a href="${esc(ad.link_url)}" data-ad-click="${ad.id}">${esc(ad.title)}</a></h3>
+      <p class="result-snippet">${esc(ad.html_content || '')}</p>
+      <div class="result-actions">
+        <span class="result-loc">${icon('spark', 12)} Ad · Learn more →</span>
+      </div>
+    </div>
+  </article>`;
+}
+
+/** Wide banner (homepage header placement) */
+function sponsoredBanner(ad) {
+  return `
+  <a class="ad-banner" href="${esc(ad.link_url)}" data-ad-click="${ad.id}">
+    <span class="sponsored-tag">Sponsored</span>
+    ${ad.image_path
+      ? `<img src="${esc(ad.image_path)}" alt="" loading="lazy">`
+      : `<div class="ad-banner-ph" style="background:${adColor(ad.id)}">${esc((ad.title || 'A').charAt(0).toUpperCase())}</div>`}
+    <span class="ad-banner-text">
+      <b>${esc(ad.title)}</b>
+      <span>${esc(ad.html_content || '')}</span>
+    </span>
+  </a>`;
+}
+
+/** Compact sidebar card (detail pages) */
+function sponsoredMini(ad) {
+  return `
+  <a class="ad-mini" href="${esc(ad.link_url)}" data-ad-click="${ad.id}">
+    ${ad.image_path
+      ? `<img src="${esc(ad.image_path)}" alt="" loading="lazy">`
+      : `<div class="ad-mini-ph" style="background:${adColor(ad.id)}">${esc((ad.title || 'A').charAt(0).toUpperCase())}</div>`}
+    <span>
+      <b>${esc(ad.title)}</b>
+      <span class="ad-mini-tag">Sponsored</span>
+    </span>
+  </a>`;
+}
+
+/** Fire-and-forget impression beacon */
+function recordAdImpression(adId) {
+  if (!adId) return;
+  api('api/ads.php', { method: 'POST', body: { action: 'impression', ad_id: adId } }).catch(() => {});
+}
+
+/** Fill a #sponsoredSide container on detail pages */
+async function loadSponsoredSide() {
+  const el = document.getElementById('sponsoredSide');
+  if (!el) return;
+  try {
+    const res = await api('api/ads.php?placement=detail_page');
+    const ads = (res && res.ads) || [];
+    if (!ads.length) { el.remove(); return; }
+    el.innerHTML = '<h3>Sponsored</h3>' + ads.map(ad => {
+      recordAdImpression(ad.id);
+      return sponsoredMini(ad);
+    }).join('');
+  } catch (e) { /* ignore — side stays empty */ }
+}
+
 function skeletonCards(n = 6) {
   let out = '';
   for (let i = 0; i < n; i++) {
@@ -516,6 +593,15 @@ document.addEventListener('click', async (e) => {
   } catch (err) {
     toast(err.message || 'Could not vote', 'error');
   }
+});
+
+/* ============================================================
+ * Event delegation: sponsored ad clicks (record, then navigate)
+ * ============================================================ */
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('[data-ad-click]');
+  if (!link) return;
+  api('api/ads.php', { method: 'POST', body: { action: 'click', ad_id: link.dataset.adClick } }).catch(() => {});
 });
 
 /* ============================================================

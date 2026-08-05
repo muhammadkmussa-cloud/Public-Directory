@@ -14,6 +14,7 @@ window.appReady.then(async () => {
   try {
     const { mosque, photos, reviews, prayer } = await api('api/mosques.php?id=' + id);
     render(mosque, photos, reviews, prayer);
+    loadSponsoredSide();
 
     document.getElementById('checkinBtn')?.addEventListener('click', async () => {
       if (!session.user) { toast('Please login to check in', 'error'); return; }
@@ -144,6 +145,7 @@ window.appReady.then(async () => {
             ${m.phone ? `<div class="side-row"><span class="lbl">Phone</span><a href="tel:${esc(m.phone)}">${esc(m.phone)}</a></div>` : ''}
             ${m.email ? `<div class="side-row"><span class="lbl">Email</span><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : ''}
           </div>` : ''}
+          <div class="side-card" id="sponsoredSide"></div>
         </aside>
       </div>
     `;

@@ -154,3 +154,14 @@ INSERT INTO `reviews` (`user_id`, `reviewable_id`, `reviewable_type`, `rating`, 
 INSERT INTO `review_helpful` (`review_id`, `user_id`, `reaction_type`, `is_helpful`) VALUES
 (1, 3, 'useful', 1), (2, 2, 'funny', 1), (3, 2, 'useful', 1), (4, 3, 'cool', 1),
 (8, 3, 'useful', 1), (11, 3, 'useful', 1), (11, 2, 'cool', 1), (5, 3, 'funny', 1);
+
+-- ---------- ADVERTISING (sample sponsored listings) ----------
+-- placement ids from schema seed: 1=homepage_header, 2=homepage_sidebar,
+-- 3=search_results, 4=listing_page, 5=detail_page
+INSERT INTO `ads`
+(`placement_id`, `advertiser_id`, `title`, `image_path`, `link_url`, `html_content`, `impressions`, `clicks`, `start_date`, `end_date`, `status`, `priority`) VALUES
+(3, 4, 'Al-Barakah Restaurant', 'assets/img/sample/restaurant-1.svg', 'business.html?id=1', 'Authentic halal Swahili & Arabic cuisine — family seating.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 10),
+(3, 4, 'Al-Salam Travel & Tours', 'assets/img/sample/travel.svg', 'business.html?id=5', 'Hajj & Umrah packages — trusted by 2,000+ pilgrims.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 5),
+(1, 4, 'Iqra Bookstore & Islamic Gifts', 'assets/img/sample/bookstore.svg', 'business.html?id=4', 'Qurans, books & gifts for the whole family.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 8),
+(5, 4, 'Noor Pharmacy', 'assets/img/sample/pharmacy.svg', 'business.html?id=3', 'Trusted community pharmacy — free BP checks.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 6),
+(5, 4, 'Green Bites Halal Cafe', 'assets/img/sample/restaurant-2.svg', 'business.html?id=6', 'Fresh juices & coffee — free Wi-Fi, study corner.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 4);

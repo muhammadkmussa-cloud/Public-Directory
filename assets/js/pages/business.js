@@ -30,6 +30,7 @@ window.appReady.then(async () => {
     const { business, photos, reviews, rating_breakdown, similar } = await api('api/businesses.php?id=' + id);
     renderBusiness(business, photos, reviews, rating_breakdown);
     renderSimilar(similar);
+    loadSponsoredSide();
 
     // check-in button
     const checkinBtn = document.getElementById('checkinBtn');
@@ -158,7 +159,8 @@ window.appReady.then(async () => {
             </table>
           </div>
 
-          ${b.checkin_count ? `<div class="side-card center"><b style="font-size:1.8rem;color:var(--primary-dark);">${b.checkin_count}</b><br><span class="muted small">check-ins</span></div>` : ''}
+          ${b.checkin_count ? `<div class="side-card center"><b style="font-size:1.8rem;color:var(--red);">${b.checkin_count}</b><br><span class="muted small">check-ins</span></div>` : ''}
+          <div class="side-card" id="sponsoredSide"></div>
         </aside>
       </div>
     `;

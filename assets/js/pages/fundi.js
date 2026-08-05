@@ -14,6 +14,7 @@ window.appReady.then(async () => {
   try {
     const { fundi, portfolio, reviews } = await api('api/fundis.php?id=' + id);
     render(fundi, portfolio, reviews);
+    loadSponsoredSide();
 
     document.getElementById('reviewForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -122,6 +123,7 @@ window.appReady.then(async () => {
             ${f.whatsapp ? `<div class="side-row"><span class="lbl">WhatsApp</span><a href="https://wa.me/${esc(f.whatsapp)}" target="_blank" rel="noopener">Chat</a></div>` : ''}
             ${f.email ? `<div class="side-row"><span class="lbl">Email</span><a href="mailto:${esc(f.email)}">${esc(f.email)}</a></div>` : ''}
           </div>` : ''}
+          <div class="side-card" id="sponsoredSide"></div>
         </aside>
       </div>
     `;

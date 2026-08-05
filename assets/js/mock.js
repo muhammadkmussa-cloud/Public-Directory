@@ -58,6 +58,15 @@ window.mockApi = (function () {
     3: [{ id: 4, photo_path: 'assets/img/sample/fundi-electric-1.svg', caption: 'Solar panel wiring' }],
   };
 
+  const ADS = [
+    { id: 1, placement_id: 3, advertiser_id: 4, title: 'Al-Barakah Restaurant', image_path: 'assets/img/sample/restaurant-1.svg', link_url: 'business.html?id=1', html_content: 'Authentic halal Swahili & Arabic cuisine — family seating.', priority: 10, status: 'active', impressions: 1240, clicks: 86 },
+    { id: 2, placement_id: 3, advertiser_id: 4, title: 'Al-Salam Travel & Tours', image_path: 'assets/img/sample/travel.svg', link_url: 'business.html?id=5', html_content: 'Hajj & Umrah packages — trusted by 2,000+ pilgrims.', priority: 5, status: 'active', impressions: 980, clicks: 54 },
+    { id: 3, placement_id: 1, advertiser_id: 4, title: 'Iqra Bookstore & Islamic Gifts', image_path: 'assets/img/sample/bookstore.svg', link_url: 'business.html?id=4', html_content: 'Qurans, books & gifts for the whole family.', priority: 8, status: 'active', impressions: 2100, clicks: 130 },
+    { id: 4, placement_id: 5, advertiser_id: 4, title: 'Noor Pharmacy', image_path: 'assets/img/sample/pharmacy.svg', link_url: 'business.html?id=3', html_content: 'Trusted community pharmacy — free BP checks.', priority: 6, status: 'active', impressions: 640, clicks: 31 },
+    { id: 5, placement_id: 5, advertiser_id: 4, title: 'Green Bites Halal Cafe', image_path: 'assets/img/sample/restaurant-2.svg', link_url: 'business.html?id=6', html_content: 'Fresh juices & coffee — free Wi-Fi, study corner.', priority: 4, status: 'active', impressions: 412, clicks: 19 },
+  ];
+  const ADS_BY_PLACEMENT = { search_results: [1, 2], homepage_header: [3], homepage_sidebar: [], listing_page: [4], detail_page: [4, 5] };
+
   const CATEGORIES = [
     { id: 1, name: 'Restaurants', slug: 'restaurants', icon: '🍽️' },
     { id: 2, name: 'Shopping', slug: 'shopping', icon: '🛍️' },
@@ -95,8 +104,16 @@ window.mockApi = (function () {
       if (action === 'logout') return { logged_out: true };
       if (action === 'login') {
         const b = parseBody(opts);
-        if ((b.identifier === 'demo@example.com' || b.identifier === 'admin@example.com') && b.password === 'Demo@123' || (b.password === 'Admin@123')) {
-          mockUser = { id: 2, username: 'amina', email: b.identifier, full_name: 'Amina Hassan', user_type: 'regular', profile_photo: '', total_reviews: 4, total_checkins: 6 };
+        const isAdmin = b.identifier === 'admin@example.com';
+        if ((b.identifier === 'demo@example.com' || isAdmin) && (b.password === 'Demo@123' || b.password === 'Admin@123')) {
+          mockUser = {
+            id: isAdmin ? 1 : 2,
+            username: isAdmin ? 'admin' : 'amina',
+            email: b.identifier,
+            full_name: isAdmin ? 'Site Administrator' : 'Amina Hassan',
+            user_type: isAdmin ? 'admin' : 'regular',
+            profile_photo: '', total_reviews: 4, total_checkins: 6, helpful_votes: 12, contributor_level: 2,
+          };
           return mockUser;
         }
         throw Object.assign(new Error('Invalid credentials'), { status: 401 });
@@ -148,6 +165,29 @@ window.mockApi = (function () {
     }
 
     if (path.startsWith('api/checkin.php')) return { checkin_count: 35 };
+
+    if (path.startsWith('api/ads.php')) {
+      if (method === 'GET') {
+        if (action === 'list') {
+          if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+          return ADS.map(a => ({ ...a, placement_name: a.placement_id === 1 ? 'Homepage header' : a.placement_id === 3 ? 'Search results' : a.placement_id === 5 ? 'Detail page' : 'Listing page', placement_location: a.placement_id === 1 ? 'homepage_header' : a.placement_id === 3 ? 'search_results' : a.placement_id === 5 ? 'detail_page' : 'listing_page' }));
+        }
+        const placement = url.searchParams.get('placement');
+        const ids = ADS_BY_PLACEMENT[placement] || [];
+        return { ads: ids.map(i => ADS.find(a => a.id === i)).filter(Boolean), placement: { location: placement, max_ads: 2 } };
+      }
+      const b = parseBody(opts);
+      if (b.action === 'impression') return { impressions: 1241 };
+      if (b.action === 'click') return { clicks: 87 };
+      if (b.action === 'create') {
+        if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+        return { ad_id: 99 };
+      }
+      if (b.action === 'toggle' || b.action === 'delete') {
+        if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+        return { status: b.status || 'paused', deleted: b.action === 'delete' };
+      }
+    }
 
     throw Object.assign(new Error('Not found in mock: ' + path), { status: 404 });
   }

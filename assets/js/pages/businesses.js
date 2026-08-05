@@ -17,11 +17,25 @@ window.appReady.then(async () => {
   }
 
   async function load() {
-    const data = await api('api/businesses.php?' + new URLSearchParams(form ? formData(form) : {}).toString());
+    const qs = new URLSearchParams(form ? formData(form) : {}).toString();
+    const [data, adsRes] = await Promise.all([
+      api('api/businesses.php?' + qs),
+      api('api/ads.php?placement=search_results').catch(() => null),
+    ]);
 
     countEl.textContent = data.total.toLocaleString() + ' businesses found';
-    resultsEl.innerHTML = data.items.length
-      ? data.items.map(businessCard).join('')
+
+    // interleave sponsored ads like Yelp: first one on top, others sprinkled in
+    const cards = data.items.map(businessCard);
+    const ads = (adsRes && adsRes.ads) || [];
+    ads.forEach((ad, i) => {
+      const pos = i === 0 ? 0 : Math.min(4 + i, cards.length);
+      cards.splice(pos, 0, sponsoredCard(ad));
+      recordAdImpression(ad.id);
+    });
+
+    resultsEl.innerHTML = cards.length
+      ? cards.join('')
       : emptyState('No businesses found', 'Try adjusting your filters.', '<a class="btn btn-primary btn-sm" href="businesses.html">View all businesses</a>');
 
     // populate filter options (once)
