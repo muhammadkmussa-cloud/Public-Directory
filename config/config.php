@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Application Configuration
+ * Ummah Directory — Application Configuration
  * Frontend: static HTML/CSS/JS  ·  Backend: PHP + MySQL JSON API
  *
  * UPDATE THE DATABASE CREDENTIALS BELOW FOR YOUR SERVER.
@@ -8,13 +8,13 @@
 
 // ---- Database -------------------------------------------------------------
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'umma_directory');
+define('DB_NAME', 'ummah_directory');
 define('DB_USER', 'your_database_user');
 define('DB_PASS', 'your_database_password');
 define('DB_CHARSET', 'utf8mb4');
 
 // ---- Application ----------------------------------------------------------
-define('APP_NAME', 'Umma Directory');
+define('APP_NAME', 'Ummah Directory');
 define('APP_ENV', 'production');            // 'development' | 'production'
 
 // Base URL used to build absolute links (password reset, payment callbacks).
@@ -38,7 +38,7 @@ define('SESSION_LIFETIME', 60 * 60 * 24);   // 24 hours (seconds)
 define('CSRF_TOKEN_NAME', 'csrf_token');
 
 // ---- Mail (used for the password-reset + email-verification "From:" header) --
-define('SMTP_FROM_NAME', 'Umma Directory');          // sender display name
+define('SMTP_FROM_NAME', 'Ummah Directory');          // sender display name
 define('SMTP_FROM_EMAIL', 'no-reply@yourdomain.com'); // sender address
 
 // ---- Google OAuth (Sign in with Google) -----------------------------------

@@ -1,5 +1,5 @@
 /**
- * Umma Directory — share helpers
+ * Ummah Directory — share helpers
  * Uses the native Web Share API where supported (mobile), otherwise falls
  * back to a modal with copy-link + WhatsApp / X / Facebook / Email links.
  * Loaded on every page (after app.js) so share buttons work on cards too.
@@ -16,7 +16,7 @@ const SHARE_TARGETS = [
 
 /** Main entry: share a listing. */
 function shareListing(opts = {}) {
-  const title = opts.title || document.title || 'Umma Directory';
+  const title = opts.title || document.title || 'Ummah Directory';
   const url = opts.url || window.location.href;
   const text = opts.text || title;
   const data = { title, text, url };
@@ -37,12 +37,12 @@ function setOgMeta(overrides = {}) {
     if (!el) { el = document.createElement('meta'); el.setAttribute('property', prop); head.appendChild(el); }
     if (content) el.setAttribute('content', String(content));
   };
-  if (overrides.title) { meta('og:title', overrides.title); meta('twitter:title', overrides.title); document.title = overrides.title + ' — Umma Directory'; }
+  if (overrides.title) { meta('og:title', overrides.title); meta('twitter:title', overrides.title); document.title = overrides.title + ' — Ummah Directory'; }
   if (overrides.description) { meta('og:description', overrides.description); meta('twitter:description', overrides.description); }
   if (overrides.image) { meta('og:image', overrides.image); meta('twitter:image', overrides.image); }
   meta('og:type', 'website');
   meta('og:url', window.location.href);
-  meta('og:site_name', 'Umma Directory');
+  meta('og:site_name', 'Ummah Directory');
   meta('twitter:card', 'summary_large_image');
 }
 window.setOgMeta = setOgMeta;

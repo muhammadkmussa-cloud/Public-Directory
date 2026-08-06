@@ -1,5 +1,5 @@
 /**
- * Umma Directory — map helpers (Leaflet + OpenStreetMap, no API key)
+ * Ummah Directory — map helpers (Leaflet + OpenStreetMap, no API key)
  * Loaded on pages that include Leaflet. All functions no-op safely if
  * Leaflet isn't available (e.g. demo preview without network).
  */

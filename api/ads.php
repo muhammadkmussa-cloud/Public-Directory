@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Ads API
+ * Ummah Directory — Ads API
  *
  *   GET  api/ads.php?placement=search_results        → active ads for a placement (public)
  *   GET  api/ads.php?action=list                     → all ads + stats (admin)

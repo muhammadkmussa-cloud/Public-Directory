@@ -1,4 +1,4 @@
-# Umma Directory
+# Ummah Directory
 
 A Yelp-style directory for the Muslim community — **halal businesses, mosques with prayer times, and trusted fundis (skilled workers)** — with reviews, ratings, check-ins and search.
 

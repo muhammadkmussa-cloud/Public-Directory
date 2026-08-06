@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Favorites (bookmarks) API
+ * Ummah Directory — Favorites (bookmarks) API
  *
  *   GET  api/favorites.php?action=mine                             → saved items (login)
  *   GET  api/favorites.php?action=status&favoritable_id=1&favoritable_type=business

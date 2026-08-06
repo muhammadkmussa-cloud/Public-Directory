@@ -1,5 +1,5 @@
 -- ============================================
--- UMMA DIRECTORY - YELP-STYLE DATABASE SCHEMA
+-- UMMAH DIRECTORY - YELP-STYLE DATABASE SCHEMA
 -- Phase 1: Core Tables & Authentication
 -- ============================================
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Image Upload API (secure)
+ * Ummah Directory — Image Upload API (secure)
  *
  *   POST api/upload.php  (multipart/form-data)
  *     image : file            required

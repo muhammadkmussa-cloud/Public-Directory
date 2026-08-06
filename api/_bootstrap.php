@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — API bootstrap
+ * Ummah Directory — API bootstrap
  * Every endpoint starts with:  require __DIR__ . '/_bootstrap.php';
  */
 

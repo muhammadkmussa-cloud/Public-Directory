@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Prayer time calculator
+ * Ummah Directory — Prayer time calculator
  * Simplified solar-position calculation (East-Africa friendly angles),
  * no external API required. Returns times in 24h "HH:MM".
  */

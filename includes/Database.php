@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — PDO Database wrapper (singleton)
+ * Ummah Directory — PDO Database wrapper (singleton)
  * All SQL goes through prepared statements.
  */
 

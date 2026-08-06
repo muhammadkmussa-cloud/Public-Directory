@@ -1,4 +1,4 @@
-# Umma Directory — Codebase Audit
+# Ummah Directory — Codebase Audit
 
 **Audited:** 2026-08-05 · Branch: `arena/019fd2b8-ummah-directory-3-0` (at `bc87945`)
 **Method:** Full static review of all 32 PHP files, schema, JS, CSS, and routing config. (PHP runtime was not available in the sandbox, so findings are based on code-level analysis — every "fatal" below is a direct, provable call/mismatch, not a guess.)

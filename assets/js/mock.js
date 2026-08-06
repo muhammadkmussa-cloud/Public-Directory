@@ -1,5 +1,5 @@
 /**
- * Umma Directory — DEMO DATA LAYER (mock API)
+ * Ummah Directory — DEMO DATA LAYER (mock API)
  * Used ONLY when the PHP backend can't be reached (e.g. static preview).
  * In production the real api/*.php endpoints are used and this file is never hit.
  * Shapes mirror the real API responses exactly.
@@ -416,7 +416,7 @@ window.mockApi = (function () {
   const mockNotifs = [
     { id: 3, type: 'new_review', title: 'New ★★★★★ review', message: 'Yusuf Omar reviewed Al-Barakah Restaurant: "The chicken biryani is incredible…"', link: 'business.html?id=1', is_read: 0, created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
     { id: 2, type: 'donation', title: 'New donation: KSh 5,000', message: 'You received a donation for Nuru Medical Fund.', link: 'dashboard.html', is_read: 0, created_at: new Date(Date.now() - 86400000).toISOString() },
-    { id: 1, type: 'system', title: 'Welcome to Umma Directory!', message: 'Your account is ready.', link: 'profile.html', is_read: 1, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
+    { id: 1, type: 'system', title: 'Welcome to Ummah Directory!', message: 'Your account is ready.', link: 'profile.html', is_read: 1, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
   ];
   const mockFavorites = new Set(['business:1', 'mosque:3']); // demo user's saved items
 

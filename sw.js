@@ -1,8 +1,8 @@
 /**
- * Umma Directory — service worker (PWA)
+ * Ummah Directory — service worker (PWA)
  * App-shell cache for the static pages; API calls go to the network.
  */
-const CACHE = 'umma-v1';
+const CACHE = 'ummah-v1';
 const APP_SHELL = [
   './',
   'index.html',

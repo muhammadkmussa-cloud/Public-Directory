@@ -1,5 +1,5 @@
 -- ============================================
--- UMMA DIRECTORY — SAMPLE DATA
+-- UMMAH DIRECTORY — SAMPLE DATA
 -- Run via `php database/install.php` (recommended)
 -- or import manually AFTER the schema and demo users exist.
 -- Demo users (ids 1-7) are created by install.php.

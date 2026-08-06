@@ -1,4 +1,4 @@
-# Umma Directory — Code Review
+# Ummah Directory — Code Review
 
 Scope reviewed: PHP JSON API (`api/*`, `includes/*`, `config/*`), DB schema + installer
 (`database/*`), and frontend (`assets/js/*`, `*.html`).

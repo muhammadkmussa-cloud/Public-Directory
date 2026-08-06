@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Search suggestions (autocomplete)
+ * Ummah Directory — Search suggestions (autocomplete)
  *
  *   GET api/suggest.php?q=plum
  *   → [{type:'business'|'mosque'|'fundi'|'category', label, sub, url}, ...] (max 10)

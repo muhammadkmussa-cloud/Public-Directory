@@ -1,5 +1,5 @@
 /**
- * Umma Directory — frontend core
+ * Ummah Directory — frontend core
  * Static HTML/CSS/JS frontend consuming the PHP JSON API.
  * Loaded on every page (before the page-specific script).
  */
@@ -43,7 +43,7 @@ const I18N = {
     'Removed from bookmarks': 'تمت الإزالة من المفضلة',
   },
 };
-let lang = localStorage.getItem('umma_lang') || 'en';
+let lang = localStorage.getItem('ummah_lang') || 'en';
 
 function t(str) {
   const dict = I18N[lang] || I18N.en;
@@ -51,7 +51,7 @@ function t(str) {
 }
 function setLang(l) {
   lang = ['en', 'sw', 'ar'].includes(l) ? l : 'en';
-  localStorage.setItem('umma_lang', lang);
+  localStorage.setItem('ummah_lang', lang);
   // apply RTL direction for Arabic
   document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   document.documentElement.setAttribute('lang', lang);
@@ -234,9 +234,9 @@ async function ensureCsrf() {
  * ============================================================ */
 function wordmark() {
   return `
-  <a href="index.html" class="brand" aria-label="Umma Directory — home">
+  <a href="index.html" class="brand" aria-label="Ummah Directory — home">
     <svg class="brand-burst" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">${ICONS.spark}</svg>
-    <span class="brand-text">umma<em>!</em></span>
+    <span class="brand-text">ummah<em>!</em></span>
   </a>`;
 }
 
@@ -273,9 +273,9 @@ const FOOTER_HTML = `
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-col footer-about">
-      <a href="index.html" class="brand" aria-label="Umma Directory — home">
+      <a href="index.html" class="brand" aria-label="Ummah Directory — home">
         <svg class="brand-burst" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">${ICONS.spark}</svg>
-        <span class="brand-text">umma<em>!</em></span>
+        <span class="brand-text">ummah<em>!</em></span>
       </a>
       <p>Connecting Muslim communities with trusted businesses, mosques and skilled workers.</p>
     </div>
@@ -300,7 +300,7 @@ const FOOTER_HTML = `
     </div>
   </div>
   <div class="container footer-bottom">
-    <span>© <span id="year"></span> Umma Directory — made with ❤️ for the Ummah</span>
+    <span>© <span id="year"></span> Ummah Directory — made with ❤️ for the Ummah</span>
     <span class="stack-tag">HTML · CSS · JS frontend · PHP backend</span>
   </div>
 </footer>`;

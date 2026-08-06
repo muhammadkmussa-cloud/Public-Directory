@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Donations API
+ * Ummah Directory — Donations API
  *
  *   POST api/donations.php
  *     {charity_id, campaign_id?, amount, donor_name?, donor_email?, donor_phone?,

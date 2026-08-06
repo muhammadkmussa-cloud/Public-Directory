@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Reports / moderation API
+ * Ummah Directory — Reports / moderation API
  *
  *   GET  api/reports.php?action=mine    → my reports (login)
  *   POST api/reports.php                → {action:'create', reportable_id,

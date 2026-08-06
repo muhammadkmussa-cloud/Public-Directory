@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Authentication (session based)
+ * Ummah Directory — Authentication (session based)
  * Static helpers used by the JSON API.
  */
 

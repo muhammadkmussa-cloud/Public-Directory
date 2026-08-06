@@ -10,6 +10,6 @@
   <circle cx="60" cy="440" r="180" fill="#ffffff" opacity="0.08"/>
   <text x="400" y="235" font-size="130" text-anchor="middle">💊</text>
   <text x="400" y="330" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle">Noor Pharmacy</text>
-  <text x="400" y="375" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#ffffff" opacity="0.85" text-anchor="middle">Umma Directory</text>
+  <text x="400" y="375" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#ffffff" opacity="0.85" text-anchor="middle">Ummah Directory</text>
   <rect x="330" y="410" width="140" height="6" rx="3" fill="#ffffff" opacity="0.9"/>
 </svg>

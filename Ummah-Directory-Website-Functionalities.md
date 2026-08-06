@@ -1,6 +1,6 @@
 <!-- Page 1 -->
 
-# Umma Directory Website Functionalities
+# Ummah Directory Website Functionalities
 
 ## 1. Directory Functionality (Businesses & Service Providers)
 
@@ -10,19 +10,19 @@
 **Special Category – includes images, extended description, website link, and social media links.**
 **Premier Category – featured on top of listings, highlighted background, verified badge, more gallery images, video embed, call-to-action buttons (WhatsApp, Call, Directions).**
 
-![Umma Directory page 1 image 1](images/page1-image1.png)
+![Ummah Directory page 1 image 1](images/page1-image1.png)
 
 <!-- Page 2 -->
 
-![Umma Directory page 2 image 1](images/page2-image1.png)
+![Ummah Directory page 2 image 1](images/page2-image1.png)
 
-![Umma Directory page 2 image 2](images/page2-image2.png)
+![Ummah Directory page 2 image 2](images/page2-image2.png)
 
-![Umma Directory page 2 image 3](images/page2-image3.png)
+![Ummah Directory page 2 image 3](images/page2-image3.png)
 
 <!-- Page 3 -->
 
-![Umma Directory page 3 image 1](images/page3-image1.png)
+![Ummah Directory page 3 image 1](images/page3-image1.png)
 
 ## 2. Mosques Directory
 
@@ -40,19 +40,19 @@ Admin can manually adjust if needed.
 Search mosques by area.
 Mark mosque as “favorite.”
 
-![Umma Directory page 3 image 2](images/page3-image2.png)
+![Ummah Directory page 3 image 2](images/page3-image2.png)
 
 <!-- Page 4 -->
 
-![Umma Directory page 4 image 1](images/page4-image1.png)
+![Ummah Directory page 4 image 1](images/page4-image1.png)
 
-![Umma Directory page 4 image 2](images/page4-image2.png)
+![Ummah Directory page 4 image 2](images/page4-image2.png)
 
 <!-- Page 5 -->
 
-![Umma Directory page 5 image 1](images/page5-image1.png)
+![Ummah Directory page 5 image 1](images/page5-image1.png)
 
-![Umma Directory page 5 image 2](images/page5-image2.png)
+![Ummah Directory page 5 image 2](images/page5-image2.png)
 
 ## 3. Fundis (Skilled Workers & Service Personnel)
 
@@ -71,9 +71,9 @@ GPS/Map integration to show fundis near the user
 
 <!-- Page 6 -->
 
-![Umma Directory page 6 image 1](images/page6-image1.png)
+![Ummah Directory page 6 image 1](images/page6-image1.png)
 
-![Umma Directory page 6 image 2](images/page6-image2.png)
+![Ummah Directory page 6 image 2](images/page6-image2.png)
 
 ## 4. Advertising / Ads
 
@@ -125,9 +125,9 @@ Organizations can register and post their campaigns.
 
 <!-- Page 8 -->
 
-![Umma Directory page 8 image 1](images/page8-image1.png)
+![Ummah Directory page 8 image 1](images/page8-image1.png)
 
-![Umma Directory page 8 image 2](images/page8-image2.png)
+![Ummah Directory page 8 image 2](images/page8-image2.png)
 
 ## Extra Features to Consider
 

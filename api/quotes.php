@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Fundi quote requests (delivered via WhatsApp)
+ * Ummah Directory — Fundi quote requests (delivered via WhatsApp)
  *
  *   POST api/quotes.php  {fundi_id, name, phone, description}
  *     → stores the request and returns a wa.me link pre-filled with the

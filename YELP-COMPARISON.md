@@ -1,4 +1,4 @@
-# Umma Directory vs. Yelp — How Close Are We?
+# Ummah Directory vs. Yelp — How Close Are We?
 
 *Comparison date: 2026-08-05 · Baseline: yelp.com (current) vs. this repo at `ce59158`*
 
@@ -17,7 +17,7 @@
 | Red brand color (`#d32323`) | `--red: #d32323` everywhere | ✅ Match |
 | Red star ratings | Red stars, half-star support | ✅ Match |
 | White canvas, gray text, `#e6e6e6` borders | Same palette | ✅ Match |
-| Wordmark ("yelp" in red script) | "umma!" in red with burst | ✅ Close (not script, but reads the same) |
+| Wordmark ("yelp" in red script) | "ummah!" in red with burst | ✅ Close (not script, but reads the same) |
 | Display typeface (SoHo Gothic) | Archivo (close grotesque) | 🟡 Close, not identical |
 | "Find / Near" search | Labeled "Find / Near" fields + red Search | ✅ Match |
 | Horizontal result cards (photo left) | Same anatomy, "Open" status in green | ✅ Match |

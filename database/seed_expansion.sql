@@ -1,5 +1,5 @@
 -- ============================================
--- UMMA DIRECTORY — SEED DATA EXPANSION
+-- UMMAH DIRECTORY — SEED DATA EXPANSION
 -- Run after schema.sql + seed.sql (ids build on those).
 -- Adds: 18 more businesses, 10 mosques, 8 fundis, photo galleries,
 --       70+ reviews with owner responses, check-ins, emergency numbers,

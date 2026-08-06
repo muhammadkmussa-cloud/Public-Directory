@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Installer
+ * Ummah Directory — Installer
  *
  * Creates the database schema, loads sample data, and creates demo users.
  *
@@ -25,7 +25,7 @@ if (file_exists(__DIR__ . '/install.lock')) {
     exit(1);
 }
 
-out("== Umma Directory installer ==\n");
+out("== Ummah Directory installer ==\n");
 
 /* ---- 1. connect ---------------------------------------------------------- */
 try {

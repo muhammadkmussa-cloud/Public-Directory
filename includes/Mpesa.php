@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — M-Pesa Daraja STK Push helper
+ * Ummah Directory — M-Pesa Daraja STK Push helper
  *
  * With real credentials (MPESA_CONSUMER_KEY/SECRET + production env) this
  * performs a live STK push. Without credentials (or in dev/sandbox) it

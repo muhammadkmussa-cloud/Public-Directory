@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Notifications API
+ * Ummah Directory — Notifications API
  *
  *   GET  api/notifications.php            → my notifications (login)
  *   GET  api/notifications.php?unread=1   → {unread_count} (login)

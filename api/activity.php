@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Recent Activity feed (homepage)
+ * Ummah Directory — Recent Activity feed (homepage)
  *
  *   GET api/activity.php → latest approved reviews with user + listing info
  */

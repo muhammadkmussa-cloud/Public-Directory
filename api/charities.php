@@ -1,6 +1,6 @@
 <?php
 /**
- * Umma Directory — Charities & campaigns API
+ * Ummah Directory — Charities & campaigns API
  *
  *   GET api/charities.php             → list (q, category, page)
  *   GET api/charities.php?id=2        → detail + active campaigns
