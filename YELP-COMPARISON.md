@@ -14,7 +14,7 @@
 
 | Yelp signature | Your site | Status |
 |---|---|---|
-| Red brand color (`#d32323`) | `--red: #d32323` everywhere | ✅ Match |
+| Red brand color (`#14F528`) | `--brand: #14F528` everywhere | ✅ Match |
 | Red star ratings | Red stars, half-star support | ✅ Match |
 | White canvas, gray text, `#e6e6e6` borders | Same palette | ✅ Match |
 | Wordmark ("yelp" in red script) | "ummah!" in red with burst | ✅ Close (not script, but reads the same) |

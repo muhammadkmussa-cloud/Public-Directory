@@ -202,7 +202,7 @@ window.appReady.then(async () => {
             </table>
           </div>
 
-          ${b.checkin_count ? `<div class="side-card center"><b style="font-size:1.8rem;color:var(--red);">${b.checkin_count}</b><br><span class="muted small">check-ins</span></div>` : ''}
+          ${b.checkin_count ? `<div class="side-card center"><b style="font-size:1.8rem;color:var(--brand);">${b.checkin_count}</b><br><span class="muted small">check-ins</span></div>` : ''}
           <div class="side-card">
             <h3>Location</h3>
             <div id="bizMap" class="map-box" style="height:200px;margin-bottom:.6rem;"></div>

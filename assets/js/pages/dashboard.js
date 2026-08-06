@@ -49,7 +49,7 @@ window.appReady.then(async () => {
           <div class="dash-listing-info">
             <b>${esc(b.name)}</b>
             <span class="muted small">${esc(b.city || '')} · ${esc(b.price_range || '$')}${b.is_claimed ? ' · Claimed' : ' · Not claimed'}</span>
-            <span class="muted small">⭐ ${Number(b.rating_average || 0).toFixed(1)} (${b.review_count || 0} reviews) · 📍 ${b.checkin_count || 0} check-ins${b.pending_responses ? ' · <b class="red-text">' + b.pending_responses + ' responses pending</b>' : ''}</span>
+            <span class="muted small">⭐ ${Number(b.rating_average || 0).toFixed(1)} (${b.review_count || 0} reviews) · 📍 ${b.checkin_count || 0} check-ins${b.pending_responses ? ' · <b class="green-text">' + b.pending_responses + ' responses pending</b>' : ''}</span>
           </div>
           <div class="dash-listing-actions">
             <a class="btn btn-outline btn-xs" href="business.html?id=${b.id}">View</a>

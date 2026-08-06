@@ -150,7 +150,7 @@ window.appReady.then(async () => {
           ${c.paybill_number ? `
           <div class="side-card">
             <h3>M-Pesa Paybill</h3>
-            <p style="font-size:1.4rem;font-weight:800;color:var(--red);">${esc(c.paybill_number)}</p>
+            <p style="font-size:1.4rem;font-weight:800;color:var(--brand);">${esc(c.paybill_number)}</p>
             <p class="muted small">Paybill (${esc(c.paybill_number || '')}) — use your phone to send directly.</p>
           </div>` : ''}
           ${c.email ? `<div class="side-card"><h3>Contact</h3><div class="side-row"><span class="lbl">Email</span><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div></div>` : ''}
