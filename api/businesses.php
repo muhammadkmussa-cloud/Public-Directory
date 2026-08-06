@@ -292,7 +292,7 @@ $orderBy = $orderMap[$sort] ?? $orderMap['rating'];
 $items = $db->fetchAll(
     "SELECT b.id, b.name, b.slug, b.city, b.region, b.price_range, b.short_description,
             b.is_verified, b.is_open, b.rating_average, b.review_count, b.checkin_count,
-            b.latitude, b.longitude${dist['select'] ? ',' . $dist['select'] : ''},
+            b.latitude, b.longitude" . ($dist['select'] ? ',' . $dist['select'] : '') . ",
             (SELECT c.name FROM categories c
                JOIN business_categories bc ON bc.category_id = c.id AND bc.business_id = b.id
               ORDER BY bc.is_primary DESC LIMIT 1) AS category_name,

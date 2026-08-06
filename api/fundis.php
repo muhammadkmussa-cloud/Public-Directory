@@ -134,7 +134,7 @@ $items = $db->fetchAll(
     "SELECT f.id, f.profession, f.profession_other, f.years_experience, f.city, f.region,
             f.is_verified, f.rating_average, f.review_count, f.hourly_rate_min,
             f.hourly_rate_max, f.skills, f.phone, f.whatsapp,
-            f.latitude, f.longitude${dist['select'] ? ',' . $dist['select'] : ''},
+            f.latitude, f.longitude" . ($dist['select'] ? ',' . $dist['select'] : '') . ",
             u.full_name, u.profile_photo, u.contributor_level, u.verification_badge
        FROM fundis f
        JOIN users u ON u.id = f.user_id

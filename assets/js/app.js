@@ -235,8 +235,7 @@ async function ensureCsrf() {
 function wordmark() {
   return `
   <a href="index.html" class="brand" aria-label="Ummah Directory — home">
-    <svg class="brand-burst" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">${ICONS.spark}</svg>
-    <span class="brand-text">ummah<em>!</em></span>
+    <img class="brand-logo" src="assets/img/logo.png" alt="Ummah Directory" width="120" height="80">
   </a>`;
 }
 
@@ -274,8 +273,7 @@ const FOOTER_HTML = `
   <div class="container footer-grid">
     <div class="footer-col footer-about">
       <a href="index.html" class="brand" aria-label="Ummah Directory — home">
-        <svg class="brand-burst" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">${ICONS.spark}</svg>
-        <span class="brand-text">ummah<em>!</em></span>
+        <img class="brand-logo" src="assets/img/logo.png" alt="Ummah Directory" width="150" height="100">
       </a>
       <p>Connecting Muslim communities with trusted businesses, mosques and skilled workers.</p>
     </div>

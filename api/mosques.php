@@ -137,7 +137,7 @@ $orderBy = $orderMap[$sort] ?? $orderMap['rating'];
 
 $items = $db->fetchAll(
     "SELECT m.id, m.name, m.slug, m.city, m.address, m.phone, m.is_verified,
-            m.rating_average, m.review_count, m.latitude, m.longitude${dist['select'] ? ',' . $dist['select'] : ''},
+            m.rating_average, m.review_count, m.latitude, m.longitude" . ($dist['select'] ? ',' . $dist['select'] : '') . ",
             (SELECT photo_path FROM mosque_photos WHERE mosque_id = m.id
               ORDER BY is_primary DESC, id DESC LIMIT 1) AS primary_photo
        FROM mosques m
