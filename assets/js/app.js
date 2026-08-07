@@ -11,6 +11,10 @@
 const USE_MOCK_FALLBACK = true; // show sample data when the PHP API is unreachable (preview/demo mode)
 let mockMode = false;
 
+// Base URL for API and relative links (read from meta tag injected by base.php)
+const metaAppUrl = document.querySelector('meta[name="app-url"]');
+const APP_URL = metaAppUrl ? metaAppUrl.content : '';
+
 /* ============================================================
  * i18n (EN / SW) — lightweight dictionary
  * ============================================================ */
@@ -200,7 +204,10 @@ async function api(path, opts = {}) {
   }
   let res;
   try {
-    res = await fetch(path, { credentials: 'same-origin', ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+    const metaAppUrl = document.querySelector('meta[name="app-url"]');
+    const base = metaAppUrl ? metaAppUrl.content : '';
+    const url = path.startsWith('api/') && base ? `${base}/${path}` : (path.startsWith('api/') ? `/${path}` : path);
+    res = await fetch(url, { credentials: 'same-origin', ...opts, headers: { ...headers, ...(opts.headers || {}) } });
   } catch (e) {
     // network failure → maybe demo mode
     if (USE_MOCK_FALLBACK && window.mockApi) { mockMode = true; return window.mockApi(path, opts); }
@@ -334,8 +341,14 @@ const FOOTER_HTML = `
 function renderLayout() {
   const headerEl = document.getElementById('site-header');
   const footerEl = document.getElementById('site-footer');
+  
+  const makeAbsolute = (html) => html.replace(/(href|src)="([^"#]+)"/g, (match, attr, path) => {
+    if (path.startsWith('http') || path.startsWith('/') || path.startsWith('tel:') || path.startsWith('mailto:')) return match;
+    return `${attr}="${APP_URL ? APP_URL + '/' : ''}${path}"`;
+  });
+
   if (headerEl) {
-    headerEl.innerHTML = HEADER_HTML;
+    headerEl.innerHTML = makeAbsolute(HEADER_HTML);
     const toggle = document.getElementById('navToggle');
     const menu = document.getElementById('navMenu');
     if (toggle && menu) {
@@ -346,7 +359,7 @@ function renderLayout() {
     }
   }
   if (footerEl) {
-    footerEl.innerHTML = FOOTER_HTML;
+    footerEl.innerHTML = makeAbsolute(FOOTER_HTML);
     const y = document.getElementById('year');
     if (y) y.textContent = new Date().getFullYear();
   }
@@ -786,7 +799,6 @@ function fundiCard(f) {
       </div>
     </div>
   </article>`;
-}
 }
 
 /* ---- compact tiles (homepage modules, like Yelp's "popular" rows) ---- */

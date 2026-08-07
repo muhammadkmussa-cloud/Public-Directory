@@ -61,6 +61,7 @@ $appUrl = APP_URL ?? 'https://yourdomain.com';
   <link rel="manifest" href="<?= e($appUrl) ?>/manifest.json">
   <link rel="apple-touch-icon" href="<?= e($appUrl) ?>/assets/img/logo.png">
   
+  <meta name="app-url" content="<?= e($appUrl) ?>">
   <link rel="stylesheet" href="<?= e($appUrl) ?>/assets/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +89,7 @@ $appUrl = APP_URL ?? 'https://yourdomain.com';
   <div id="shared-modals"></div>
 
   <!-- Core scripts -->
-  <script nonce="<?= $cspNonce ?>" src="<?= e($appUrl) ?>/assets/js/app.js"></script>
+  <script nonce="<?= $cspNonce ?>" src="<?= e($appUrl) ?>/assets/js/app.js?v=<?= time() ?>"></script>
   <script nonce="<?= $cspNonce ?>" src="<?= e($appUrl) ?>/assets/js/share.js"></script>
   <script nonce="<?= $cspNonce ?>" src="<?= e($appUrl) ?>/assets/js/mock.js"></script>
   <script nonce="<?= $cspNonce ?>" src="<?= e($appUrl) ?>/assets/js/map.js"></script>

@@ -80,10 +80,10 @@ function fetchReviewsWithReactions(Database $db, string $reviewableType, int $re
                 COUNT(CASE WHEN rh.reaction_type = 'useful' THEN 1 END) AS useful_count,
                 COUNT(CASE WHEN rh.reaction_type = 'funny' THEN 1 END) AS funny_count,
                 COUNT(CASE WHEN rh.reaction_type = 'cool' THEN 1 END) AS cool_count,
-                ANY_VALUE(u.full_name) AS full_name,
-                ANY_VALUE(u.profile_photo) AS profile_photo,
-                ANY_VALUE(u.contributor_level) AS contributor_level,
-                ANY_VALUE(u.verification_badge) AS verification_badge
+                MAX(u.full_name) AS full_name,
+                MAX(u.profile_photo) AS profile_photo,
+                MAX(u.contributor_level) AS contributor_level,
+                MAX(u.verification_badge) AS verification_badge
            FROM reviews r
            JOIN users u ON u.id = r.user_id
            LEFT JOIN review_helpful rh ON rh.review_id = r.id
