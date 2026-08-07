@@ -57,21 +57,43 @@ if ($action === 'mpesa_callback') {
     $checkoutId = $body['CheckoutRequestID'];
     $resultCode = (int)($body['ResultCode'] ?? 1);
 
+    // Extract metadata from callback (amount, receipt, etc.)
+    $transAmount = null;
+    $receipt = null;
+    foreach ($body['CallbackMetadata']['Item'] ?? [] as $item) {
+        $name = $item['Name'] ?? '';
+        if ($name === 'Amount' || $name === 'TransAmount') {
+            $transAmount = (float)($item['Value'] ?? 0);
+        }
+        if ($name === 'MpesaReceiptNumber' && !empty($item['Value'])) {
+            $receipt = $item['Value'];
+        }
+    }
+
     $donation = $db->fetchOne(
-        "SELECT id, campaign_id, status FROM donations
+        "SELECT id, campaign_id, status, amount FROM donations
           WHERE transaction_id = ? AND payment_method = 'mpesa' AND status = 'pending'",
         [$checkoutId]
     );
 
+    // Log callback for audit (IP, user-agent, checkoutId, resultCode, amount)
+    $callbackIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $callbackUa = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+    error_log("M-Pesa callback: checkoutId=$checkoutId, resultCode=$resultCode, transAmount=$transAmount, ip=$callbackIp, ua=$callbackUa");
+
     if ($donation && $resultCode === 0) {
-        // Extract the M-Pesa receipt number from the callback metadata (best-effort).
-        $receipt = null;
-        foreach ($body['CallbackMetadata']['Item'] ?? [] as $item) {
-            if (($item['Name'] ?? '') === 'MpesaReceiptNumber' && !empty($item['Value'])) {
-                $receipt = $item['Value'];
-                break;
-            }
+        // Validate amount matches the pending donation
+        $donationAmount = (float)$donation['amount'];
+        if ($transAmount !== null && abs($transAmount - $donationAmount) > 0.01) {
+            error_log("M-Pesa amount mismatch: callback=$transAmount, stored=$donationAmount, checkoutId=$checkoutId");
+            // Mark as failed due to amount mismatch
+            $db->execute("UPDATE donations SET status = 'failed', updated_at = NOW() WHERE id = ?", [$donation['id']]);
+            http_response_code(200);
+            header('Content-Type: application/json');
+            echo json_encode(['ResultCode' => 1, 'ResultDesc' => 'Amount mismatch']);
+            exit;
         }
+
         $db->execute(
             'UPDATE donations SET status = ?, transaction_id = COALESCE(?, transaction_id), updated_at = NOW() WHERE id = ?',
             ['completed', $receipt, $donation['id']]
@@ -86,7 +108,7 @@ if ($action === 'mpesa_callback') {
         if ($admin) {
             $amount = (float)$db->fetchValue('SELECT amount FROM donations WHERE id = ?', [$donation['id']]);
             notify($db, $admin, 'donation', 'Payment confirmed: KSh ' . number_format($amount),
-                'An M-Pesa donation has been completed.', 'dashboard.html');
+                'An M-Pesa donation has been completed.', 'dashboard');
         }
     } elseif ($donation && $resultCode !== 0) {
         $db->execute("UPDATE donations SET status = 'failed', updated_at = NOW() WHERE id = ?", [$donation['id']]);
@@ -124,17 +146,15 @@ if ($action === 'paypal_ipn') {
         $verified = ($resp === 'VERIFIED');
     }
 
-    // Only act on genuinely verified, completed donations. (In an environment
-    // without outbound curl, fall back to a sandbox-simulated accept so the
-    // flow stays testable — log the event either way.)
-    if (!$verified) {
-        if (PAYPAL_MODE !== 'sandbox') {
-            error_log('PayPal IPN: verification failed; ignoring notification.');
-            http_response_code(200);
-            exit;
-        }
-        error_log('PayPal IPN: verification skipped (sandbox) — accepting notification.');
-        $verified = true;
+    // Log verification result for audit
+    $ipnIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    if ($verified) {
+        error_log("PayPal IPN: VERIFIED, ip=$ipnIp");
+    } else {
+        error_log("PayPal IPN: verification FAILED, ip=$ipnIp, resp=$resp");
+        // Do NOT auto-accept in sandbox — require genuine verification
+        http_response_code(200);
+        exit;
     }
 
     $paymentStatus = strtolower($_POST['payment_status'] ?? '');
@@ -163,7 +183,7 @@ if ($action === 'paypal_ipn') {
             if ($admin) {
                 $amount = (float)$db->fetchValue('SELECT amount FROM donations WHERE id = ?', [$donation['id']]);
                 notify($db, $admin, 'donation', 'Payment confirmed: KSh ' . number_format($amount),
-                    'A PayPal donation has been completed.', 'dashboard.html');
+                    'A PayPal donation has been completed.', 'dashboard');
             }
         }
     }
@@ -179,15 +199,17 @@ if ($action === 'paypal_ipn') {
  * ============================================================ */
 if ($action === 'status') {
     require_method('GET');
+    $uid = require_login()['id'];           // 401 when not logged in
     $donationId = (int)($_GET['donation_id'] ?? 0);
     $d = $db->fetchOne(
         'SELECT id, user_id, status, amount, payment_method, created_at FROM donations WHERE id = ?',
         [$donationId]
     );
     if (!$d) json_err('Donation not found', 404);
-    // If a user is logged in, only let them view their own donation's status.
-    $uid = Auth::isLoggedIn() ? Auth::user()['id'] : null;
-    if ($uid && $d['user_id'] && (int)$d['user_id'] !== (int)$uid) {
+    // Only the donor who created the donation while logged in may poll its
+    // status. Anonymous donations (user_id NULL) are never readable via this
+    // endpoint — those donors get confirmation through their payment channel.
+    if (!$d['user_id'] || (int)$d['user_id'] !== (int)$uid) {
         json_err('Not your donation', 403);
     }
     json_ok([
@@ -212,11 +234,11 @@ $charityId    = (int)($body['charity_id'] ?? 0);
 $campaignId   = (int)($body['campaign_id'] ?? 0);
 $amount       = round((float)($body['amount'] ?? 0), 2);
 $method       = $body['payment_method'] ?? 'mpesa';
-$donorName    = trim($body['donor_name'] ?? '');
-$donorEmail   = strtolower(trim($body['donor_email'] ?? ''));
-$donorPhone   = trim($body['donor_phone'] ?? '');
-$isAnonymous  = !empty($body['is_anonymous']);
-$message      = trim($body['message'] ?? '');
+$donorName    = sanitize_line($body['donor_name'] ?? '', 100);
+    $donorEmail   = strtolower(trim($body['donor_email'] ?? ''));
+    $donorPhone   = trim($body['donor_phone'] ?? '');
+    $isAnonymous  = !empty($body['is_anonymous']);
+    $message      = sanitize_text($body['message'] ?? '', 1000);
 
 if ($charityId < 1 || !$db->fetchOne('SELECT id FROM charities WHERE id = ?', [$charityId])) {
     json_err('Charity not found', 404);
@@ -316,7 +338,7 @@ if ($charityAdmin) {
     notify($db, $charityAdmin, 'donation',
         'New donation: KSh ' . number_format($amount) . ($campaign ? ' to ' . $campaign['title'] : ''),
         'You received a donation for ' . $charityName . ($isAnonymous ? ' (anonymous)' : ' from ' . ($donorName ?: 'a supporter')),
-        'dashboard.html');
+        'dashboard');
 }
 
 // refresh campaign totals (charity totals are always computed from donations)

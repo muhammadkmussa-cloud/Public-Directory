@@ -105,8 +105,23 @@ if ($action === 'reset') {
 if ($action === 'logout') {
     require_method('POST');
     require_csrf();
+    rate_limit('logout', 60, 300);
     Auth::logout();
     json_ok(['logged_out' => true]);
+}
+
+/* ---- update profile ---- */
+if ($action === 'update') {
+    require_method('POST');
+    require_login();
+    require_csrf();
+    rate_limit('profile_update', 20, 3600);
+    $body = json_body();
+    $result = Auth::updateProfile($body);
+    if (!$result['ok']) {
+        json_err($result['error'], 422);
+    }
+    json_ok($result['user']);
 }
 
 json_err('Unknown action', 404);

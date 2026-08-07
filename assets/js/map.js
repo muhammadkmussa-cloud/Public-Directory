@@ -42,7 +42,7 @@ function renderResultsMap(containerId, items) {
   const markers = has.map(item => {
     const name = item.name || item.full_name || '';
     const rating = item.rating_average ? ' ★ ' + Number(item.rating_average).toFixed(1) + ' (' + (item.review_count || 0) + ')' : '';
-    const url = item.url || (item.id ? (item.type || 'business') + '.html?id=' + item.id : '#');
+    const url = item.url || (item.id ? (item.type || 'business') + '?id=' + item.id : '#');
     const m = L.marker([item.latitude, item.longitude]).addTo(map);
     m.bindPopup('<b>' + String(name).replace(/</g, '&lt;') + '</b>' + rating
       + '<br><a href="' + String(url).replace(/"/g, '&quot;') + '">View details →</a>');

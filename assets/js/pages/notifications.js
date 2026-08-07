@@ -8,7 +8,7 @@ window.appReady.then(async () => {
 
   if (!session.user) {
     list.innerHTML = emptyState('Please login first', 'You need an account to view notifications.',
-      '<a class="btn btn-primary btn-sm" href="login.html">Login</a>');
+      '<a class="btn btn-primary btn-sm" href="login">Login</a>');
     return;
   }
 
@@ -26,7 +26,7 @@ window.appReady.then(async () => {
           <button class="btn btn-ghost btn-xs" id="readAllBtn">Mark all read</button>
         </div>
         ${items.map(n => `
-          <a class="notif-item ${n.is_read ? '' : 'unread'}" href="${esc(n.link || 'profile.html')}" data-notif-id="${n.id}">
+          <a class="notif-item ${n.is_read ? '' : 'unread'}" href="${esc(n.link || 'profile')}" data-notif-id="${n.id}">
             <b>${esc(n.title)}</b>
             <span class="muted small">${esc(n.message)}</span>
             <span class="muted small">${timeAgo(n.created_at)}</span>

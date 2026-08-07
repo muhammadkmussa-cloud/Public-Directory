@@ -9,7 +9,7 @@ window.appReady.then(async () => {
 
   if (!session.user || session.user.user_type !== 'admin') {
     wrap.innerHTML = emptyState('Admins only', 'You need an admin account to moderate content.',
-      '<a class="btn btn-primary btn-sm" href="login.html">Login</a>');
+      '<a class="btn btn-primary btn-sm" href="login">Login</a>');
     return;
   }
 

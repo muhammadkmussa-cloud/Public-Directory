@@ -2,11 +2,11 @@
   "name": "Ummah Directory",
   "short_name": "Ummah!",
   "description": "Find halal businesses, mosques with prayer times, trusted fundis and causes — reviewed by the community.",
-  "start_url": "index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#14F528",
   "icons": [
-    { "src": "assets/img/logo.png", "sizes": "1536x1024", "type": "image/png", "purpose": "any" }
+    { "src": "assets/img/logo.png", "sizes": "520x310", "type": "image/png", "purpose": "any" }
   ]
 }

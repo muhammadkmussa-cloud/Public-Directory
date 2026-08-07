@@ -42,7 +42,7 @@ header('Cache-Control: no-store, private'); // API responses are never cached
 // Note: on shared hosting the throttling is still best-effort (files are fast,
 // but not atomic under heavy concurrency); for hard guarantees use mod_evasive
 // or a WAF (e.g. Cloudflare).
-function rate_limit($key, $max = 60, $window = 60)
+function rate_limit($key, $max = 60, $window = 60, $keySuffix = '', $bindToIp = true)
 {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $now = time();
@@ -50,7 +50,9 @@ function rate_limit($key, $max = 60, $window = 60)
     if (!is_dir($dir)) {
         @mkdir($dir, 0700, true);
     }
-    $file = $dir . '/' . $key . '_' . md5($ip) . '.json';
+    $suffix = $keySuffix !== '' ? '_' . $keySuffix : '';
+    $ipPart = $bindToIp ? '_' . md5($ip) : '';
+    $file = $dir . '/' . $key . $suffix . $ipPart . '.json';
 
     $data = ['count' => 0, 'reset' => $now + $window];
     if (is_file($file)) {
@@ -80,6 +82,89 @@ function rate_limit($key, $max = 60, $window = 60)
     if ($data['count'] > $max) {
         json_err('Too many requests — please slow down', 429);
     }
+}
+
+/**
+ * Clear a rate-limit bucket (used to reset per-account login fail counter on success).
+ * $keySuffix allows targeting a specific account's bucket.
+ * $bindToIp must match the rate_limit() call that created the bucket.
+ */
+function rate_limit_clear($key, $keySuffix = '', $bindToIp = true)
+{
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $dir = rtrim(sys_get_temp_dir(), '/') . '/umdir_rl';
+    $suffix = $keySuffix !== '' ? '_' . $keySuffix : '';
+    $ipPart = $bindToIp ? '_' . md5($ip) : '';
+    $file = $dir . '/' . $key . $suffix . $ipPart . '.json';
+    if (is_file($file)) {
+        @unlink($file);
+    }
+}
+
+/**
+ * Sanitize user-provided text input for safe storage.
+ * Strips tags, normalizes whitespace, converts HTML special chars.
+ * Use for all free-text user input before DB insert.
+ */
+function sanitize_text($s, $maxLen = 0)
+{
+    $s = (string)$s;
+    $s = strip_tags($s);
+    $s = htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $s = preg_replace('/\s+/u', ' ', $s);
+    $s = trim($s);
+    if ($maxLen > 0 && mb_strlen($s) > $maxLen) {
+        $s = mb_substr($s, 0, $maxLen);
+    }
+    return $s;
+}
+
+/**
+ * Sanitize a single-line input (name, title, etc.) — stricter, no newlines.
+ */
+function sanitize_line($s, $maxLen = 255)
+{
+    $s = sanitize_text($s, $maxLen);
+    $s = str_replace(["\n", "\r"], '', $s);
+    return $s;
+}
+
+/**
+ * Check if a business is open now based on its opening_hours JSON.
+ * Handles overnight ranges (end < start) and multiple ranges (comma-separated).
+ * Returns false if hours data is missing or 'Closed'.
+ */
+function is_open_now($hoursJson, $now = null)
+{
+    $now = $now ?: new DateTimeImmutable();
+    $day = strtolower($now->format('l'));
+    $hours = json_decode($hoursJson ?? '', true) ?? [];
+    $ranges = $hours[$day] ?? null;
+    if (!$ranges || $ranges === 'Closed') {
+        return false;
+    }
+    $currentMinutes = (int)$now->format('H') * 60 + (int)$now->format('i');
+    foreach ((array)$ranges as $range) {
+        $range = trim($range);
+        if ($range === 'Closed' || $range === '') continue;
+        // Parse "HH:MM - HH:MM" or "HH:MM-HH:MM"
+        if (!preg_match('/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/', $range, $m)) continue;
+        $startMin = (int)$m[1] * 60 + (int)$m[2];
+        $endMin = (int)$m[3] * 60 + (int)$m[4];
+        if ($endMin <= $startMin) {
+            // Overnight range (e.g., 18:00 - 02:00)
+            $endMin += 24 * 60;
+        }
+        $currentMin = $currentMinutes;
+        // Also check next day for overnight
+        if ($currentMin < 12 * 60 && $endMin > 24 * 60) {
+            $currentMin += 24 * 60;
+        }
+        if ($currentMin >= $startMin && $currentMin <= $endMin) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // ---- JSON response helpers ------------------------------------------------

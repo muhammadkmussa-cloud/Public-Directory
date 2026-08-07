@@ -6,9 +6,37 @@
 
 window.appReady.then(async () => {
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = 'mosques.html'; return; }
+  if (!id) { window.location.href = 'mosques'; return; }
+
+  const visitDateInput = document.getElementById('rvVisitDate');
+  if (visitDateInput) visitDateInput.max = new Date().toISOString().split('T')[0];
 
   const el = document.getElementById('mosqueDetail');
+  if (!el) {
+    /* ---- SSR page: content is server-rendered; wire the interactive bits ---- */
+    const mapBox = document.getElementById('mosqueMap');
+    if (mapBox && mapBox.dataset.lat && typeof initDetailMap === 'function') {
+      initDetailMap('mosqueMap', mapBox.dataset.lat, mapBox.dataset.lng, mapBox.dataset.name, '/mosque/' + id);
+    }
+    loadSponsoredSide();
+    const checkinBtn = document.getElementById('checkinBtn');
+    if (checkinBtn) {
+      checkinBtn.addEventListener('click', async () => {
+        if (!session.user) { toast('Please login to check in', 'error'); return; }
+        try {
+          const data = await api('api/checkin.php', { method: 'POST', body: { checkinable_id: id, checkinable_type: 'mosque' } });
+          toast('Checked in! (' + data.checkin_count + ' check-ins)');
+          checkinBtn.disabled = true;
+        } catch (e) { toast(e.message || 'Could not check in', 'error'); }
+      });
+    }
+    const writeReviewBtn = document.getElementById('writeReviewBtn');
+    if (writeReviewBtn) {
+      writeReviewBtn.addEventListener('click', () => { window.location.href = 'mosque?id=' + id; });
+    }
+    return;
+  }
+
   el.innerHTML = '<div class="panel">Loading mosque…</div>';
 
   try {
@@ -20,7 +48,7 @@ window.appReady.then(async () => {
     });
     render(mosque, photos, reviews, prayer);
     loadSponsoredSide();
-    initDetailMap('mosqueMap', mosque.latitude, mosque.longitude, mosque.name, 'mosque.html?id=' + mosque.id);
+    initDetailMap('mosqueMap', mosque.latitude, mosque.longitude, mosque.name, 'mosque?id=' + mosque.id);
     refreshSaveState('mosque', mosque.id);
     wirePhotoInput();
   (() => {
@@ -39,10 +67,12 @@ window.appReady.then(async () => {
         },
         'url': window.location.href,
       };
-      const script = document.createElement('script');
-      script.type = 'application/ld+json';
-      script.textContent = JSON.stringify(ld);
-      document.head.appendChild(script);
+      if (!document.querySelector('script[type="application/ld+json"]')) {
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(ld);
+        document.head.appendChild(script);
+      }
     } catch (e) {}
   })();
 
@@ -70,6 +100,7 @@ window.appReady.then(async () => {
             rating: document.querySelector('input[name="rating"]:checked')?.value,
             title: document.getElementById('rvTitle').value,
             content: document.getElementById('rvContent').value,
+            visit_date: document.getElementById('rvVisitDate').value || null,
             photo_paths: photoPaths,
           },
         });
@@ -83,7 +114,7 @@ window.appReady.then(async () => {
     });
 
   } catch (e) {
-    el.innerHTML = emptyState('Mosque not found', e.message, '<a class="btn btn-primary btn-sm" href="mosques.html">Browse mosques</a>');
+    el.innerHTML = emptyState('Mosque not found', e.message, '<a class="btn btn-primary btn-sm" href="mosques">Browse mosques</a>');
   }
 
   function render(m, photos, reviews, prayer) {
@@ -124,7 +155,7 @@ window.appReady.then(async () => {
           ${m.latitude ? `<a class="btn btn-outline" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 14)} Directions</a>` : ''}
           <button class="btn btn-ghost save-btn" data-save-type="mosque" data-save-id="${m.id}">${icon('bookmark', 14)} Save</button>
           <button class="btn btn-ghost" id="checkinBtn">${icon('pin', 14)} Check in</button>
-          <button class="btn btn-ghost share-btn" data-share-title="${esc(m.name)}" data-share-url="mosque.html?id=${m.id}" data-share-text="${esc(m.address || m.name)}">${icon('share', 14)} Share</button>
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(m.name)}" data-share-url="mosque?id=${m.id}" data-share-text="${esc(m.address || m.name)}">${icon('share', 14)} Share</button>
           <button class="btn btn-outline" id="writeReviewBtn">${icon('pen', 14)} Write a review</button>
         </div>
       </div>

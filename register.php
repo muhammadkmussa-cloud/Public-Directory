@@ -1,30 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create account — Ummah Directory</title>
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Ummah Directory">
-  <meta property="og:title" content="Create account — Ummah Directory">
-  <meta property="og:description" content="Find halal businesses, mosques with prayer times, and trusted fundis near you.">
-  <meta property="og:url" content="https://yourdomain.com/register.html">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="description" content="Join Ummah Directory for free.">
-  <link rel="icon" href="assets/img/logo.png" type="image/png">
-  <meta name="theme-color" content="#14F528">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="assets/img/logo.png">
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<?php
+/**
+ * Registration page — unified PHP entry point
+ * Replaces register.html with server-rendered meta tags via base.php
+ */
+declare(strict_types=1);
 
-</head>
-<body>
-  <div id="site-header"></div>
+require_once __DIR__ . '/includes/TemplateHelpers.php';
 
-  <main>
+$pageTitle = 'Create account — Ummah Directory';
+$pageDescription = 'Join Ummah Directory for free.';
+$pageUrl = getCurrentPageUrl();
+$pageImage = 'https://yourdomain.com/assets/img/logo.png';
+$pageType = 'website';
+$pageScript = 'auth.js';
+[$lang, $dir] = getLangAndDir();
+$rawMain = true;
+
+$mainContent = '
     <div class="container auth-wrap">
       <div class="auth-card">
         <h1>Join the community</h1>
@@ -61,23 +53,9 @@
           </div>
           <button class="btn btn-primary btn-block" type="submit" id="registerBtn">Create account</button>
         </form>
-        <div class="auth-alt">Already have an account? <a href="login.html">Login</a></div>
+        <div class="auth-alt">Already have an account? <a href="login">Login</a></div>
       </div>
     </div>
-  </main>
+';
 
-  <div id="site-footer"></div>
-
-  <script src="assets/js/app.js"></script>
-  <script src="assets/js/share.js"></script>
-  <script src="assets/js/mock.js"></script>
-  <script src="assets/js/pages/auth.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      });
-    }
-  </script>
-</body>
-</html>
+require_once __DIR__ . '/templates/base.php';

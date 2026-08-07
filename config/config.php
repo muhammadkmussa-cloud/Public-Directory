@@ -7,15 +7,28 @@
  */
 
 // ---- Database -------------------------------------------------------------
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'ummah_directory');
-define('DB_USER', 'your_database_user');
-define('DB_PASS', 'your_database_password');
+define('DB_USER', 'root');
+define('DB_PASS', 'root');
 define('DB_CHARSET', 'utf8mb4');
 
 // ---- Application ----------------------------------------------------------
 define('APP_NAME', 'Ummah Directory');
-define('APP_ENV', 'production');            // 'development' | 'production'
+define('APP_ENV', 'development');            // 'development' | 'production'
+
+// ---- Fail-closed safety guard ---------------------------------------------
+// Never boot in production with default database credentials.
+// Intentionally conservative: root user or empty password are both refused,
+// even if someone set a strong root password. Do not relax — change the creds.
+if (APP_ENV === 'production' && (DB_USER === 'root' || DB_PASS === '' || DB_PASS === 'root')) {
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, "Refusing to start: set non-root DB credentials in config/config.php for production.\n");
+        exit(1);
+    }
+    http_response_code(500);
+    exit('Refusing to start: set non-root DB credentials in config/config.php for production.');
+}
 
 // Base URL used to build absolute links (password reset, payment callbacks).
 // Set APP_URL explicitly (e.g. 'https://yourdomain.com'), or leave empty to

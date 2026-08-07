@@ -209,12 +209,15 @@ async function api(path, opts = {}) {
   const ct = res.headers.get('content-type') || '';
   let data = null;
   try { data = ct.includes('application/json') ? await res.json() : null; } catch (e) { data = null; }
+  if (USE_MOCK_FALLBACK && window.mockApi && !ct.includes('application/json')) {
+    // No JSON API response → the PHP backend is absent (static server serving
+    // raw .php / 404 HTML, file://) → demo mode. A running PHP backend always
+    // answers with application/json, so real errors (401/403/422/429/500) fall
+    // through and throw with their actual HTTP status below.
+    mockMode = true;
+    return window.mockApi(path, opts);
+  }
   if (!res.ok) {
-    if (USE_MOCK_FALLBACK && window.mockApi && (!data || !data.success)) {
-      // PHP not present (404/500 on a static server) → demo mode
-      mockMode = true;
-      return window.mockApi(path, opts);
-    }
     const err = new Error((data && data.error) || 'Request failed (' + res.status + ')');
     err.status = res.status;
     throw err;
@@ -234,8 +237,8 @@ async function ensureCsrf() {
  * ============================================================ */
 function wordmark() {
   return `
-  <a href="index.html" class="brand" aria-label="Ummah Directory — home">
-    <img class="brand-logo" src="assets/img/logo.png" alt="Ummah Directory" width="120" height="80">
+  <a href="index" class="brand" aria-label="Ummah Directory — home">
+    <img class="brand-logo" src="assets/img/logo.png" alt="Ummah Directory" width="111" height="66">
   </a>`;
 }
 
@@ -247,14 +250,18 @@ const HEADER_HTML = `
       <span></span><span></span><span></span>
     </button>
     <div class="nav-menu" id="navMenu">
-      <a class="nav-link" href="businesses.html" data-i18n="Businesses">Businesses</a>
-      <a class="nav-link" href="mosques.html" data-i18n="Mosques">Mosques</a>
-      <a class="nav-link" href="fundis.html" data-i18n="Fundis">Fundis</a>
-      <a class="nav-link" href="charities.html" data-i18n="Charities">Charities</a>
-      <a class="btn btn-primary btn-write" href="businesses.html">${icon('pen', 14)} ${t('Write a Review')}</a>
+      <a class="nav-link" href="businesses" data-i18n="Businesses">Businesses</a>
+      <a class="nav-link" href="mosques" data-i18n="Mosques">Mosques</a>
+      <a class="nav-link" href="fundis" data-i18n="Fundis">Fundis</a>
+      <a class="nav-link" href="charities" data-i18n="Charities">Charities</a>
+      <a class="nav-link nav-for-business" href="business-claim" data-i18n="For Business">For Business</a>
+      <a class="btn btn-primary btn-write" href="businesses">${icon('pen', 14)} ${t('Write a Review')}</a>
       <div class="nav-auth" id="navAuth"></div>
       <button class="btn btn-ghost nav-bell" id="notifBell" aria-label="Notifications" title="Notifications">
         ${icon('bell', 18)} <span class="notif-dot" id="notifDot" hidden></span>
+      </button>
+      <button type="button" class="btn btn-ghost nav-emergency" id="emergencyBtn" aria-label="Emergency numbers" aria-haspopup="menu" aria-expanded="false" title="Emergency numbers">
+        ${icon('phone', 18)}
       </button>
       <div class="lang-switch" id="langSwitch">
         <button class="lang-btn ${lang === 'en' ? 'active' : ''}" data-lang="en">EN</button>
@@ -272,30 +279,51 @@ const FOOTER_HTML = `
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-col footer-about">
-      <a href="index.html" class="brand" aria-label="Ummah Directory — home">
-        <img class="brand-logo" src="assets/img/logo.png" alt="Ummah Directory" width="150" height="100">
+      <a href="index" class="brand" aria-label="Ummah Directory — home">
+        <img class="brand-logo" src="assets/img/logo.png" alt="Ummah Directory" width="141" height="84">
       </a>
       <p>Connecting Muslim communities with trusted businesses, mosques and skilled workers.</p>
     </div>
     <div class="footer-col">
       <h4>Discover</h4>
-      <a href="businesses.html" data-i18n="Businesses">Businesses</a>
-      <a href="mosques.html" data-i18n="Mosques">Mosques</a>
-      <a href="fundis.html" data-i18n="Fundis">Fundis</a>
-      <a href="charities.html" data-i18n="Charities">Charities</a>
+      <a href="businesses" data-i18n="Businesses">Businesses</a>
+      <a href="mosques" data-i18n="Mosques">Mosques</a>
+      <a href="fundis" data-i18n="Fundis">Fundis</a>
+      <a href="charities" data-i18n="Charities">Charities</a>
+      <a href="businesses">Write a review</a>
+    </div>
+    <div class="footer-col">
+      <h4 data-i18n="For Business">For Business</h4>
+      <a href="business-claim" data-i18n="For Business">For Business</a>
+      <a href="dashboard">Dashboard</a>
+      <a href="admin">Advertise</a>
+      <a href="moderation">Moderation</a>
     </div>
     <div class="footer-col">
       <h4 data-i18n="Account">Account</h4>
-      <a href="login.html">Login</a>
-      <a href="register.html">Create account</a>
-      <a href="profile.html">Profile</a>
+      <a href="login">Login</a>
+      <a href="register">Create account</a>
+      <a href="profile">Profile</a>
+      <a href="notifications">Notifications</a>
     </div>
     <div class="footer-col">
-      <h4 data-i18n="Project">Project</h4>
-      <a href="index.html">Home</a>
-      <a href="admin.html">Advertise</a>
-      <a href="404.html">Report an issue</a>
+      <h4 data-i18n="Help">Help</h4>
+      <a href="verify">Verify email</a>
+      <a href="forgot">Forgot password</a>
+      <a href="reset">Reset password</a>
     </div>
+  </div>
+  <div class="container footer-strip">
+    <span class="strip-label">Browse:</span>
+    <a href="businesses?category=restaurants">Restaurants</a>
+    <a href="businesses?category=shopping">Shopping</a>
+    <a href="businesses?category=services">Services</a>
+    <a href="businesses?category=health-medical">Health &amp; Medical</a>
+    <a href="businesses?category=education">Education</a>
+    <a href="businesses?category=automotive">Automotive</a>
+    <a href="mosques">Mosques</a>
+    <a href="fundis">Fundis</a>
+    <a href="charities">Charities</a>
   </div>
   <div class="container footer-bottom">
     <span>© <span id="year"></span> Ummah Directory — made with ❤️ for the Ummah</span>
@@ -331,11 +359,11 @@ function renderAuthNav() {
   if (u) {
     const initial = esc((u.full_name || u.username || 'U').charAt(0).toUpperCase());
     el.innerHTML = `
-      <a class="nav-link user-chip" href="profile.html">
+      <a class="nav-link user-chip" href="profile">
         <span class="avatar">${initial}</span> ${esc(u.full_name || u.username)}
       </a>
-      ${u.email_verified === false ? '<a class="nav-link verify-pill" href="verify.html" title="Confirm your email">Confirm email</a>' : ''}
-      <a class="nav-link" href="dashboard.html">Dashboard</a>
+      ${u.email_verified === false ? '<a class="nav-link verify-pill" href="verify" title="Confirm your email">Confirm email</a>' : ''}
+      <a class="nav-link" href="dashboard">Dashboard</a>
       <button class="btn btn-ghost" id="logoutBtn">Logout</button>`;
     const lb = document.getElementById('logoutBtn');
     if (lb) lb.addEventListener('click', async () => {
@@ -343,12 +371,12 @@ function renderAuthNav() {
       session.user = null;
       renderAuthNav();
       toast('Logged out');
-      setTimeout(() => (window.location.href = 'index.html'), 400);
+      setTimeout(() => (window.location.href = 'index'), 400);
     });
   } else {
     el.innerHTML = `
-      <a class="btn btn-ghost" href="login.html">${t('Login')}</a>
-      <a class="btn btn-primary" href="register.html">${t('Sign up')}</a>`;
+      <a class="btn btn-ghost" href="login">${t('Login')}</a>
+      <a class="btn btn-primary" href="register">${t('Sign up')}</a>`;
   }
 }
 
@@ -409,13 +437,13 @@ function renderNotifDropdown() {
       </div>
       ${items.length
         ? items.slice(0, 10).map(n => `
-            <a class="notif-item ${n.is_read ? '' : 'unread'}" href="${esc(n.link || 'profile.html')}" data-notif-id="${n.id}">
+            <a class="notif-item ${n.is_read ? '' : 'unread'}" href="${esc(n.link || 'profile')}" data-notif-id="${n.id}">
               <b>${esc(n.title)}</b>
               <span class="muted small">${esc(n.message)}</span>
               <span class="muted small">${timeAgo(n.created_at)}</span>
             </a>`).join('')
         : '<p class="muted center" style="padding:1rem 0;">No notifications yet</p>'}
-      <a class="notif-all" href="notifications.html">View all</a>`;
+      <a class="notif-all" href="notifications">View all</a>`;
 
     const readAll = panel.querySelector('#notifReadAll');
     if (readAll) readAll.addEventListener('click', async () => {
@@ -449,6 +477,75 @@ document.addEventListener('click', (e) => {
 });
 
 /* ============================================================
+ * Emergency numbers dropdown
+ * ============================================================ */
+function closeEmergencyPanel() {
+  const p = document.getElementById('emergencyPanel');
+  if (p) p.remove();
+  const b = document.getElementById('emergencyBtn');
+  if (b) b.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', onEmergencyDocClick);
+}
+
+function onEmergencyDocClick(e) {
+  const p = document.getElementById('emergencyPanel');
+  if (p && !p.contains(e.target) && !e.target.closest('#emergencyBtn')) {
+    document.removeEventListener('click', onEmergencyDocClick);
+    closeEmergencyPanel();
+  }
+}
+
+async function renderEmergencyDropdown() {
+  let panel = document.getElementById('emergencyPanel');
+  if (panel) { closeEmergencyPanel(); return; }
+  panel = document.createElement('div');
+  panel.id = 'emergencyPanel';
+  panel.className = 'emergency-panel';
+  panel.innerHTML = '<div class="emergency-loading">Loading…</div>';
+  document.body.appendChild(panel);
+  const btn = document.getElementById('emergencyBtn');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+
+  try {
+    const data = await api('api/emergency.php');
+    const items = data || [];
+    panel.innerHTML = `
+      <div class="emergency-head"><b>Emergency Numbers</b></div>
+      ${items.length
+        ? items.map(n => `
+            <div class="emergency-item">
+              <a class="emergency-name" href="tel:${esc(n.phone)}">${esc(n.name)}</a>
+              <div class="emergency-meta">
+                <span class="emergency-category">${esc(n.category)}</span>
+                ${n.whatsapp ? `<a class="emergency-whatsapp" href="https://wa.me/${esc(waNumber(n.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 12)} WhatsApp</a>` : ''}
+                ${Number(n.is_24_7) ? '<span class="emergency-24">24/7</span>' : ''}
+              </div>
+              ${n.description ? `<div class="emergency-desc muted small">${esc(n.description)}</div>` : ''}
+            </div>`).join('')
+        : '<p class="muted center" style="padding:1rem 0;">No emergency numbers</p>'}
+    `;
+  } catch (e) {
+    panel.innerHTML = '<p class="muted center" style="padding:1rem 0;">Could not load numbers</p>';
+  }
+
+  document.addEventListener('click', onEmergencyDocClick);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#emergencyBtn')) {
+    renderEmergencyDropdown();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('emergencyPanel')) {
+    closeEmergencyPanel();
+    const b = document.getElementById('emergencyBtn');
+    if (b) b.focus();
+  }
+});
+
+/* ============================================================
  * Static text i18n — pages mark elements with data-i18n="Key"
  * ============================================================ */
 const STATIC_STRINGS = {
@@ -466,8 +563,9 @@ const STATIC_STRINGS = {
     'Mosques': 'Misikiti',
     'Fundis': 'Mafundi',
     'Charities': 'Misaada',
+    'For Business': 'Kwa Biashara',
     'Account': 'Akaunti',
-    'Project': 'Mradi',
+    'Help': 'Msaada',
     'Login': 'Ingia',
     'Sign up': 'Jisajili',
     'Write a Review': 'Andika Tathmini',
@@ -485,8 +583,9 @@ const STATIC_STRINGS = {
     'Mosques': 'المساجد',
     'Fundis': 'الحرفيون',
     'Charities': 'الجمعيات الخيرية',
+    'For Business': 'للشركات',
     'Account': 'الحساب',
-    'Project': 'المشروع',
+    'Help': 'مساعدة',
     'Login': 'تسجيل الدخول',
     'Sign up': 'إنشاء حساب',
     'Write a Review': 'اكتب مراجعة',
@@ -566,7 +665,7 @@ function setSavedState(btn, saved) {
 async function toggleFavorite(type, id) {
   if (!session.user) {
     toast('Please login to save', 'error');
-    setTimeout(() => (window.location.href = 'login.html'), 700);
+    setTimeout(() => (window.location.href = 'login'), 700);
     return null;
   }
   try {
@@ -598,7 +697,7 @@ async function refreshSaveState(type, id) {
 function businessCard(b) {
   return `
   <article class="card result-card">
-    <a class="result-media" href="business.html?id=${b.id}">
+    <a class="result-media" href="business?id=${b.id}">
       ${b.primary_photo
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
@@ -606,7 +705,7 @@ function businessCard(b) {
       ${saveBtnHtml('business', b.id)}
     </a>
     <div class="result-body">
-      <h3 class="result-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
+      <h3 class="result-title"><a href="business?id=${b.id}">${esc(b.name)}</a></h3>
       <div class="rating-row">
         ${starsHtml(b.rating_average)}
         <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span>
@@ -619,7 +718,7 @@ function businessCard(b) {
       <div class="result-actions">
         ${b.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(b.phone)}">${icon('phone', 13)} Call</a>` : ''}
         ${b.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener">${icon('nav', 13)} Directions</a>` : ''}
-        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(b.name)}" data-share-url="business.html?id=${b.id}" data-share-text="${esc(b.short_description || b.name)}">${icon('share', 13)} Share</button>
+        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(b.name)}" data-share-url="business?id=${b.id}" data-share-text="${esc(b.short_description || b.name)}">${icon('share', 13)} Share</button>
         <span class="result-loc">${icon('pin', 12)} ${esc(b.city || '')}</span>
       </div>
     </div>
@@ -629,7 +728,7 @@ function businessCard(b) {
 function mosqueCard(m) {
   return `
   <article class="card result-card">
-    <a class="result-media" href="mosque.html?id=${m.id}">
+    <a class="result-media" href="mosque?id=${m.id}">
       ${m.primary_photo
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
@@ -637,7 +736,7 @@ function mosqueCard(m) {
       ${saveBtnHtml('mosque', m.id)}
     </a>
     <div class="result-body">
-      <h3 class="result-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
+      <h3 class="result-title"><a href="mosque?id=${m.id}">${esc(m.name)}</a></h3>
       <div class="rating-row">
         ${starsHtml(m.rating_average)}
         <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span>
@@ -650,7 +749,7 @@ function mosqueCard(m) {
       <div class="result-actions">
         ${m.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(m.phone)}">${icon('phone', 13)} Call</a>` : ''}
         ${m.latitude ? `<a class="btn btn-outline btn-xs" href="https://www.google.com/maps?q=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${icon('nav', 13)} Directions</a>` : ''}
-        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(m.name)}" data-share-url="mosque.html?id=${m.id}" data-share-text="${esc(m.address || m.name)}">${icon('share', 13)} Share</button>
+        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(m.name)}" data-share-url="mosque?id=${m.id}" data-share-text="${esc(m.address || m.name)}">${icon('share', 13)} Share</button>
         <span class="result-loc">${icon('pin', 12)} ${esc(m.city || '')}</span>
       </div>
     </div>
@@ -661,7 +760,7 @@ function fundiCard(f) {
   const skills = (f.skills || []).slice(0, 3);
   return `
   <article class="card result-card">
-    <a class="result-media" href="fundi.html?id=${f.id}">
+    <a class="result-media" href="fundi?id=${f.id}">
       ${f.profile_photo
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
@@ -669,7 +768,7 @@ function fundiCard(f) {
       ${saveBtnHtml('fundi', f.id)}
     </a>
     <div class="result-body">
-      <h3 class="result-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
+      <h3 class="result-title"><a href="fundi?id=${f.id}">${esc(f.full_name)}</a></h3>
       <div class="rating-row">
         ${starsHtml(f.rating_average)}
         <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span>
@@ -682,27 +781,28 @@ function fundiCard(f) {
       <div class="result-actions">
         ${f.phone ? `<a class="btn btn-outline btn-xs" href="tel:${esc(f.phone)}">${icon('phone', 13)} Call</a>` : ''}
         ${f.whatsapp ? `<a class="btn btn-outline btn-xs" href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 13)} WhatsApp</a>` : ''}
-        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(f.full_name)}" data-share-url="fundi.html?id=${f.id}" data-share-text="${esc(f.profession || f.full_name)}">${icon('share', 13)} Share</button>
+        <button class="btn btn-outline btn-xs share-btn" data-share-title="${esc(f.full_name)}" data-share-url="fundi?id=${f.id}" data-share-text="${esc(f.profession || f.full_name)}">${icon('share', 13)} Share</button>
         <span class="result-loc">${icon('pin', 12)} ${esc(f.city || '')}${f.hourly_rate_min ? ' · ' + fmtMoney(f.hourly_rate_min) + '/hr' : ''}</span>
       </div>
     </div>
   </article>`;
+}
 }
 
 /* ---- compact tiles (homepage modules, like Yelp's "popular" rows) ---- */
 function businessTile(b) {
   return `
   <article class="card tile-card">
-    <a class="tile-media" href="business.html?id=${b.id}">
+    <a class="tile-media" href="business?id=${b.id}">
       ${b.primary_photo
         ? `<img src="${esc(b.primary_photo)}" alt="${esc(b.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('bag', 34)}</div>`}
       ${b.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
       ${saveBtnHtml('business', b.id)}
-      ${shareBtnHtml(b.name, 'business.html?id=' + b.id, b.short_description || b.name)}
+      ${shareBtnHtml(b.name, 'business?id=' + b.id, b.short_description || b.name)}
     </a>
     <div class="tile-body">
-      <h3 class="tile-title"><a href="business.html?id=${b.id}">${esc(b.name)}</a></h3>
+      <h3 class="tile-title"><a href="business?id=${b.id}">${esc(b.name)}</a></h3>
       <div class="rating-row">
         ${starsHtml(b.rating_average)}
         <span class="rating-num">${Number(b.rating_average || 0).toFixed(1)}</span>
@@ -716,15 +816,15 @@ function businessTile(b) {
 function mosqueTile(m) {
   return `
   <article class="card tile-card">
-    <a class="tile-media" href="mosque.html?id=${m.id}">
+    <a class="tile-media" href="mosque?id=${m.id}">
       ${m.primary_photo
         ? `<img src="${esc(m.primary_photo)}" alt="${esc(m.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('mosque', 34)}</div>`}
       ${saveBtnHtml('mosque', m.id)}
-      ${shareBtnHtml(m.name, 'mosque.html?id=' + m.id, m.address || m.name)}
+      ${shareBtnHtml(m.name, 'mosque?id=' + m.id, m.address || m.name)}
     </a>
     <div class="tile-body">
-      <h3 class="tile-title"><a href="mosque.html?id=${m.id}">${esc(m.name)}</a></h3>
+      <h3 class="tile-title"><a href="mosque?id=${m.id}">${esc(m.name)}</a></h3>
       <div class="rating-row">
         ${starsHtml(m.rating_average)}
         <span class="rating-num">${Number(m.rating_average || 0).toFixed(1)}</span>
@@ -742,15 +842,15 @@ const CHARITY_CATEGORY_LABEL = c => String(c || '').replace(/_/g, ' ');
 function charityCard(c) {
   return `
   <article class="card tile-card">
-    <a class="tile-media" href="charity.html?id=${c.id}">
+    <a class="tile-media" href="charity?id=${c.id}">
       ${c.cover_photo
         ? `<img src="${esc(c.cover_photo)}" alt="${esc(c.name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('heart', 34)}</div>`}
       ${c.is_verified ? '<span class="badge badge-verified">✓ Verified</span>' : ''}
-      ${shareBtnHtml(c.name, 'charity.html?id=' + c.id, c.category || c.name)}
+      ${shareBtnHtml(c.name, 'charity?id=' + c.id, c.category || c.name)}
     </a>
     <div class="tile-body">
-      <h3 class="tile-title"><a href="charity.html?id=${c.id}">${esc(c.name)}</a></h3>
+      <h3 class="tile-title"><a href="charity?id=${c.id}">${esc(c.name)}</a></h3>
       <div class="tile-loc">${esc(CHARITY_CATEGORY_LABEL(c.category))} · ${esc(c.city || '')}</div>
       <div class="campaign-stats" style="margin-top:.3rem;">
         <span><b>${fmtMoney(c.raised)}</b> raised</span>
@@ -767,15 +867,15 @@ function charityTile(c) {
 function fundiTile(f) {
   return `
   <article class="card tile-card">
-    <a class="tile-media" href="fundi.html?id=${f.id}">
+    <a class="tile-media" href="fundi?id=${f.id}">
       ${f.profile_photo
         ? `<img src="${esc(f.profile_photo)}" alt="${esc(f.full_name)}" loading="lazy">`
         : `<div class="media-placeholder">${icon('wrench', 34)}</div>`}
       ${saveBtnHtml('fundi', f.id)}
-      ${shareBtnHtml(f.full_name, 'fundi.html?id=' + f.id, f.profession || f.full_name)}
+      ${shareBtnHtml(f.full_name, 'fundi?id=' + f.id, f.profession || f.full_name)}
     </a>
     <div class="tile-body">
-      <h3 class="tile-title"><a href="fundi.html?id=${f.id}">${esc(f.full_name)}</a></h3>
+      <h3 class="tile-title"><a href="fundi?id=${f.id}">${esc(f.full_name)}</a></h3>
       <div class="rating-row">
         ${starsHtml(f.rating_average)}
         <span class="rating-num">${Number(f.rating_average || 0).toFixed(1)}</span>
@@ -811,6 +911,16 @@ function reviewCard(r) {
     const count = r[type + '_count'] ?? (type === 'useful' ? (r.helpful_count || 0) : 0);
     return `<button class="reaction-btn react-btn" data-review-id="${r.id}" data-react="${type}">${icon(ic, 14)} <span class="react-label">${label}</span> <span class="react-count">${count}</span></button>`;
   }).join('');
+  const visitDateHtml = r.visit_date ? `<div class="visit-date muted small">Visited ${r.visit_date}</div>` : '';
+  const subList = [];
+  if (r.rating_service) subList.push('Service: ' + Number(r.rating_service) + '★');
+  if (r.rating_value) subList.push('Value: ' + Number(r.rating_value) + '★');
+  if (r.rating_ambience) subList.push('Ambience: ' + Number(r.rating_ambience) + '★');
+  if (r.rating_cleanliness) subList.push('Cleanliness: ' + Number(r.rating_cleanliness) + '★');
+  const subRatingsHtml = subList.length
+    ? `<div class="muted small" style="margin:0.2rem 0 0.5rem;display:flex;gap:0.6rem;flex-wrap:wrap;">${subList.map(s => esc(s)).join(' · ')}</div>`
+    : '';
+
   return `
   <article class="review" data-review-id="${r.id}">
     <div class="review-head">
@@ -826,8 +936,10 @@ function reviewCard(r) {
       </div>
       <div class="rating-row">${starsHtml(r.rating)}</div>
     </div>
+    ${subRatingsHtml}
     <h4 class="review-title">${esc(r.title || '')}</h4>
     <p class="review-text">${esc(r.content || '')}</p>
+    ${visitDateHtml}
     ${(r.photos && r.photos.length) ? `<div class="review-photos">${r.photos.map(p => `<img src="${esc(p)}" alt="Review photo" loading="lazy">`).join('')}</div>` : ''}
     ${r.owner_response ? `<div class="owner-response"><b>Owner response:</b> ${esc(r.owner_response)}</div>` : ''}
     <div class="review-actions">
@@ -841,7 +953,7 @@ function reviewCard(r) {
  * Sponsored ads (Yelp-style)
  * ============================================================ */
 const AD_COLORS = ['#c2410c', '#0369a1', '#7c3aed', '#0d9488', '#be185d', '#4d7c0f', '#b45309', '#1d4ed8'];
-function adColor(id) { return AD_COLORS[Number(id) % AD_COLORS.length]; }
+function adColor(id) { const n = Number(id); return AD_COLORS[isFinite(n) ? n % AD_COLORS.length : 0]; }
 
 /** Horizontal sponsored result card (search results) */
 function sponsoredCard(ad) {
@@ -899,11 +1011,14 @@ function recordAdImpression(adId) {
 }
 
 /** Fill a #sponsoredSide container on detail pages */
-async function loadSponsoredSide() {
+async function loadSponsoredSide(context = {}) {
   const el = document.getElementById('sponsoredSide');
   if (!el) return;
+  const qs = new URLSearchParams({ placement: 'detail_page' });
+  if (context.category) qs.set('category', context.category);
+  if (context.city) qs.set('city', context.city);
   try {
-    const res = await api('api/ads.php?placement=detail_page');
+    const res = await api('api/ads.php?' + qs.toString());
     const ads = (res && res.ads) || [];
     if (!ads.length) { el.remove(); return; }
     el.innerHTML = '<h3>Sponsored</h3>' + ads.map(ad => {
@@ -942,7 +1057,7 @@ const REPORT_REASONS = ['spam', 'fake', 'inappropriate', 'scam', 'duplicate', 'c
 function openReportModal(type, id) {
   if (!session.user) {
     toast('Please login to report', 'error');
-    setTimeout(() => (window.location.href = 'login.html'), 700);
+    setTimeout(() => (window.location.href = 'login'), 700);
     return;
   }
   let overlay = document.getElementById('reportModal');
@@ -1011,6 +1126,154 @@ document.addEventListener('click', (e) => {
   if (!btn) return;
   e.preventDefault();
   openReportModal(btn.dataset.reportType, btn.dataset.reportId);
+});
+
+/* ============================================================
+ * Lightbox (photo viewer)
+ * ============================================================ */
+const Lightbox = (() => {
+  let currentIndex = 0;
+  let currentImages = [];
+  let overlay = null;
+  let lastFocused = null;
+  let keydownHandlerAdded = false;
+
+  function init() {
+    if (overlay) return;
+    overlay = document.createElement('div');
+    overlay.className = 'lightbox-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Photo viewer');
+    overlay.innerHTML = `
+      <button class="lightbox-close" aria-label="Close lightbox">×</button>
+      <button class="lightbox-nav lightbox-prev" aria-label="Previous image">‹</button>
+      <img class="lightbox-image" src="" alt="">
+      <button class="lightbox-nav lightbox-next" aria-label="Next image">›</button>
+      <div class="lightbox-counter"></div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.closest('.lightbox-close')) close();
+    });
+
+    overlay.querySelector('.lightbox-prev').addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigate(-1);
+    });
+
+    overlay.querySelector('.lightbox-next').addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigate(1);
+    });
+
+    // Add keydown handler once
+    if (!keydownHandlerAdded) {
+      document.addEventListener('keydown', handleKeydown);
+      keydownHandlerAdded = true;
+    }
+  }
+
+  function handleKeydown(e) {
+    if (!overlay || !overlay.classList.contains('open')) return;
+    
+    if (e.key === 'Escape') {
+      close();
+      return;
+    }
+    
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      navigate(-1);
+      return;
+    }
+    
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      navigate(1);
+      return;
+    }
+    
+    // Focus trap for Tab key
+    if (e.key === 'Tab') {
+      const focusableElements = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    }
+  }
+
+  function open(images, startIndex = 0, triggerEl = null) {
+    init();
+    if (!images.length) return;
+    lastFocused = triggerEl || document.activeElement;
+    currentImages = images;
+    currentIndex = startIndex;
+    showImage();
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Focus close button after animation
+    requestAnimationFrame(() => overlay.querySelector('.lightbox-close').focus());
+  }
+
+  function close() {
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    // Restore focus to trigger element
+    if (lastFocused && typeof lastFocused.focus === 'function') {
+      lastFocused.focus();
+    }
+  }
+
+  function navigate(dir) {
+    if (!currentImages.length) return;
+    currentIndex = (currentIndex + dir + currentImages.length) % currentImages.length;
+    showImage();
+  }
+
+  function showImage() {
+    const img = overlay.querySelector('.lightbox-image');
+    const counter = overlay.querySelector('.lightbox-counter');
+    const src = currentImages[currentIndex];
+    
+    // Handle image load error
+    img.onerror = () => {
+      img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5JbWFnZSBub3QgZm91bmQ8L3RleHQ+PC9zdmc+';
+      img.alt = 'Image not found';
+    };
+    
+    img.src = src;
+    img.alt = `Photo ${currentIndex + 1} of ${currentImages.length}`;
+    counter.textContent = `${currentIndex + 1} / ${currentImages.length}`;
+  }
+
+  // Public API
+  return { open, close };
+})();
+
+// Event delegation: click on gallery images opens lightbox
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('.gallery img, .gallery-main img, .gallery-side img, .review-photos img, .grid figure img, .hero-carousel-slide img');
+  if (!img) return;
+  
+  // Collect all images in this gallery/review/portfolio/carousel
+  const container = img.closest('.gallery, .review-photos, .grid, .hero-carousel-track');
+  if (!container) return;
+  
+  const images = Array.from(container.querySelectorAll('img')).map(i => i.src);
+  const index = images.indexOf(img.src);
+  if (index >= 0) {
+    Lightbox.open(images, index, img);
+  }
 });
 
 /* ============================================================
@@ -1102,7 +1365,7 @@ document.addEventListener('click', async (e) => {
   if (!session.user) { toast('Please login to vote', 'error'); return; }
   try {
     const data = await api('api/reviews.php', { method: 'POST', body: { action: 'react', review_id: reviewId, reaction } });
-    const card = btn.closest('.review');
+    const card = btn.closest('.review, .review-card');
     if (card) {
       card.querySelectorAll('.react-btn').forEach(b => {
         const t = b.dataset.react;

@@ -24,7 +24,7 @@ window.appReady.then(async () => {
     countEl.textContent = data.total.toLocaleString() + ' charities & causes';
     resultsEl.innerHTML = data.items.length
       ? data.items.map(charityCard).join('')
-      : emptyState('No charities found', 'Try a different search.', '<a class="btn btn-primary btn-sm" href="charities.html">View all</a>');
+      : emptyState('No charities found', 'Try a different search.', '<a class="btn btn-primary btn-sm" href="charities">View all</a>');
 
     if (data.categories && document.getElementById('f-category').options.length <= 1) {
       const sel = document.getElementById('f-category');

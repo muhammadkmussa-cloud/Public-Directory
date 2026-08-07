@@ -27,7 +27,7 @@ class Auth
     {
         $username = trim($username);
         $email    = strtolower(trim($email));
-        $fullName = trim($fullName);
+        $fullName = sanitize_line($fullName, 100);
         $phone    = trim($phone);
 
         if (strlen($username) < 3 || strlen($username) > 50) {
@@ -68,7 +68,7 @@ class Auth
         $user = self::currentUser();
         $user['email_verified'] = false;
         if (APP_ENV === 'development') {
-            $user['verification_link'] = (APP_URL ?: '') . '/verify.html?token=' . $token;
+            $user['verification_link'] = (APP_URL ?: '') . '/verify?token=' . $token;
         }
         return ['ok' => true, 'user' => $user];
     }
@@ -87,7 +87,7 @@ class Auth
             [$userId, $token]
         );
 
-        $link = (APP_URL ?: '') . '/verify.html?token=' . $token;
+        $link = (APP_URL ?: '') . '/verify?token=' . $token;
         $subject = 'Confirm your email — ' . APP_NAME;
         $message = "Assalamu alaikum" . ($username ? " $username" : '') . ",\n\n"
                  . "Welcome to " . APP_NAME . "! Please confirm your email address by clicking the link below:\n\n"
@@ -136,7 +136,7 @@ class Auth
         }
         $token = self::sendVerificationEmail($user['id'], $user['email'], $user['username']);
         if (APP_ENV === 'development') {
-            return ['ok' => true, 'message' => 'Verification email sent', 'verification_link' => (APP_URL ?: '') . '/verify.html?token=' . $token];
+            return ['ok' => true, 'message' => 'Verification email sent', 'verification_link' => (APP_URL ?: '') . '/verify?token=' . $token];
         }
         return ['ok' => true, 'message' => 'If that account exists and is unverified, a new confirmation link has been sent.'];
     }
@@ -151,13 +151,9 @@ class Auth
             return ['ok' => false, 'error' => 'Please enter your email/username and password'];
         }
 
-        // per-account lockout: 10 failed attempts → 15 min block
+        // per-account lockout using persistent rate-limit store (bypasses cookie clearing, IP-agnostic)
         $failKey = 'login_fail_' . md5(strtolower($identifier));
-        $failCount = (int)($_SESSION['lockout'][$failKey]['count'] ?? 0);
-        $failUntil = (int)($_SESSION['lockout'][$failKey]['until'] ?? 0);
-        if ($failCount >= 10 && time() < $failUntil) {
-            return ['ok' => false, 'error' => 'Too many failed attempts — try again in a few minutes'];
-        }
+        rate_limit($failKey, 10, 900, '', false);
 
         $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $user = self::db()->fetchOne(
@@ -166,16 +162,12 @@ class Auth
         );
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
-            // record the failure for lockout
-            $_SESSION['lockout'][$failKey]['count'] = $failCount + 1;
-            if ($failCount + 1 >= 10) {
-                $_SESSION['lockout'][$failKey]['until'] = time() + 900;
-            }
+            // failure already recorded by rate_limit()
             return ['ok' => false, 'error' => 'Invalid credentials'];
         }
 
-        // success → clear any lockout for this account
-        unset($_SESSION['lockout'][$failKey]);
+        // success → clear the per-account fail counter
+        rate_limit_clear($failKey, '', false);
 
         self::startSession((int)$user['id']);
         return ['ok' => true, 'user' => self::currentUser()];
@@ -401,6 +393,58 @@ class Auth
         return $u && $u['user_type'] === 'admin';
     }
 
+    /**
+     * Update the current user's profile (full_name, phone, profile_photo).
+     * Returns ['ok'=>true,'user'=>...] or ['ok'=>false,'error'=>...].
+     */
+    public static function updateProfile($data)
+    {
+        if (!self::isLoggedIn()) {
+            return ['ok' => false, 'error' => 'Please login to update your profile'];
+        }
+        $userId = (int)$_SESSION['user_id'];
+        $db = self::db();
+
+        $fullName = isset($data['full_name']) && $data['full_name'] !== '' ? sanitize_line($data['full_name'], 100) : null;
+        $phone = isset($data['phone']) && $data['phone'] !== '' ? sanitize_line($data['phone'], 20) : null;
+        $profilePhoto = isset($data['profile_photo']) && $data['profile_photo'] !== '' ? sanitize_line($data['profile_photo'], 255) : null;
+
+        // Validate profile_photo path format if provided
+        if ($profilePhoto !== null && !preg_match('#^uploads/(avatars|general)/[a-f0-9_]{32,}\.(jpg|png|gif|webp)$#i', $profilePhoto)) {
+            return ['ok' => false, 'error' => 'Invalid avatar path'];
+        }
+
+        $updates = [];
+        $params = [];
+
+        if ($fullName !== null) {
+            $updates[] = 'full_name = ?';
+            $params[] = $fullName;
+        }
+        if ($phone !== null) {
+            $updates[] = 'phone = ?';
+            $params[] = $phone;
+        }
+        if ($profilePhoto !== null) {
+            $updates[] = 'profile_photo = ?';
+            $params[] = $profilePhoto;
+        }
+
+        if (empty($updates)) {
+            return ['ok' => false, 'error' => 'No fields to update'];
+        }
+
+        $params[] = $userId;
+        $sql = 'UPDATE users SET ' . implode(', ', $updates) . ' WHERE id = ?';
+        $db->execute($sql, $params);
+
+        // Clear cached user so it reloads on next call
+        self::$currentUser = null;
+        self::$currentUserLoaded = false;
+
+        return ['ok' => true, 'user' => self::currentUser()];
+    }
+
     /** Reject common/weak passwords and passwords containing the username/email */
     private static function isWeakPassword($password, $username = '', $email = '')
     {
@@ -446,7 +490,7 @@ class Auth
             [$user['id'], $token]
         );
 
-        $resetLink = (APP_URL ?: '') . '/reset.html?token=' . $token;
+        $resetLink = (APP_URL ?: '') . '/reset?token=' . $token;
         $subject = 'Reset your password — ' . APP_NAME;
         $message = "Hello,\n\nWe received a request to reset your password. Click the link below:\n\n$resetLink\n\n"
                  . "This link expires in 1 hour. If you didn't request this, ignore this email.\n\n— " . APP_NAME . ' Team';

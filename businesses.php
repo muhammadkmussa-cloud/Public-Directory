@@ -1,32 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Businesses — Ummah Directory</title>
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Ummah Directory">
-  <meta property="og:title" content="Businesses — Ummah Directory">
-  <meta property="og:description" content="Find halal businesses, mosques with prayer times, and trusted fundis near you.">
-  <meta property="og:url" content="https://yourdomain.com/businesses.html">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="description" content="Search halal businesses by category, city and rating.">
-  <link rel="icon" href="assets/img/logo.png" type="image/png">
-  <meta name="theme-color" content="#14F528">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="assets/img/logo.png">
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<?php
+/**
+ * Business directory listing page — unified PHP entry point
+ * Replaces businesses.html with server-rendered meta tags via base.php
+ */
+declare(strict_types=1);
 
-</head>
-<body>
-  <div id="site-header"></div>
+require_once __DIR__ . '/includes/TemplateHelpers.php';
 
-  <main>
-    <div class="container">
+$pageTitle = 'Businesses — Ummah Directory';
+$pageDescription = 'Search halal businesses by category, city and rating.';
+$pageUrl = getCurrentPageUrl();
+$pageImage = 'https://yourdomain.com/assets/img/logo.png';
+$pageType = 'website';
+$pageScript = 'businesses.js';
+[$lang, $dir] = getLangAndDir();
+
+$mainContent = '
+      <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb"></nav>
+
       <div class="page-head">
         <h1>Businesses</h1>
         <p id="resultCount">Loading…</p>
@@ -78,14 +69,14 @@
           </select>
         </div>
         <div class="filter checkbox-filter-wrap">
-          <label class="checkbox-filter"><input type="checkbox" name="open_now" value="1" id="f-open"> Open now</label>
+          <label class="checkbox-filter"><input type="checkbox" name="hours" value="open" id="f-open"> Open now</label>
         </div>
         <input type="hidden" name="lat" id="f-lat">
         <input type="hidden" name="lng" id="f-lng">
         <input type="hidden" name="radius" id="f-radius" value="50">
         <div class="filter">
           <button class="btn btn-primary btn-block" type="submit">Apply filters</button>
-          <a class="btn btn-ghost btn-block" href="businesses.html" style="margin-top:.4rem;">Clear</a>
+          <a class="btn btn-ghost btn-block" href="businesses" style="margin-top:.4rem;">Clear</a>
         </div>
       </form>
 
@@ -105,23 +96,6 @@
       </div>
       <div id="mapContainer" class="map-box" hidden></div>
       <div id="pagination"></div>
-    </div>
-  </main>
+';
 
-  <div id="site-footer"></div>
-
-  <script src="assets/js/app.js"></script>
-  <script src="assets/js/share.js"></script>
-  <script src="assets/js/mock.js"></script>
-  <script src="assets/js/map.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="assets/js/pages/businesses.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      });
-    }
-  </script>
-</body>
-</html>
+require_once __DIR__ . '/templates/base.php';

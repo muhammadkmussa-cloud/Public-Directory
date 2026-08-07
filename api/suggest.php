@@ -29,7 +29,7 @@ foreach ($db->fetchAll(
         'type' => 'business',
         'label' => $b['name'],
         'sub' => 'Business · ' . ($b['city'] ?? ''),
-        'url' => 'business.html?id=' . (int)$b['id'],
+        'url' => 'business?id=' . (int)$b['id'],
     ];
 }
 
@@ -44,7 +44,7 @@ foreach ($db->fetchAll(
         'type' => 'mosque',
         'label' => $m['name'],
         'sub' => 'Mosque · ' . ($m['city'] ?? ''),
-        'url' => 'mosque.html?id=' . (int)$m['id'],
+        'url' => 'mosque?id=' . (int)$m['id'],
     ];
 }
 
@@ -60,7 +60,7 @@ foreach ($db->fetchAll(
         'type' => 'fundi',
         'label' => $f['full_name'],
         'sub' => ($f['profession'] ?? 'Fundi') . ' · ' . ($f['city'] ?? ''),
-        'url' => 'fundi.html?id=' . (int)$f['id'],
+        'url' => 'fundi?id=' . (int)$f['id'],
     ];
 }
 
@@ -71,10 +71,10 @@ foreach ($db->fetchAll(
     [$like]
 ) as $c) {
     $url = $c['type'] === 'business'
-        ? 'businesses.html?category=' . rawurlencode($c['slug'])
+        ? 'businesses?category=' . rawurlencode($c['slug'])
         : ($c['type'] === 'mosque'
-            ? 'mosques.html?q=' . rawurlencode($c['name'])
-            : 'fundis.html?skill=' . rawurlencode($c['name']));
+            ? 'mosques?q=' . rawurlencode($c['name'])
+            : 'fundis?skill=' . rawurlencode($c['name']));
     $out[] = [
         'type' => 'category',
         'label' => $c['name'],

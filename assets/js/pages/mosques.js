@@ -60,7 +60,7 @@ window.appReady.then(async () => {
     countEl.textContent = data.total.toLocaleString() + ' mosques found';
     resultsEl.innerHTML = data.items.length
       ? data.items.map(mosqueCard).join('')
-      : emptyState('No mosques found', 'Try a different search, or move your location marker.', '<a class="btn btn-primary btn-sm" href="mosques.html">View all</a>');
+      : emptyState('No mosques found', 'Try a different search, or move your location marker.', '<a class="btn btn-primary btn-sm" href="mosques">View all</a>');
 
     if (data.cities && document.getElementById('f-city').options.length <= 1) {
       const sel = document.getElementById('f-city');
@@ -82,7 +82,7 @@ window.appReady.then(async () => {
     containerId: 'mapContainer',
     resultsEl,
     pagEl,
-    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'mosque', url: 'mosque.html?id=' + i.id })),
+    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'mosque', url: 'mosque?id=' + i.id })),
     onMapShown: (map) => {
       if (userLoc) addUserMarker(map, userLoc.lat, userLoc.lng);
     },

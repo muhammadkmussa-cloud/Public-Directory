@@ -43,7 +43,7 @@ if (isset($_GET['id'])) {
     );
 
     $reviews = $db->fetchAll(
-        'SELECT r.id, r.rating, r.title, r.content, r.helpful_count, r.created_at,
+        'SELECT r.id, r.rating, r.title, r.content, r.helpful_count, r.visit_date, r.created_at,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'useful\') AS useful_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'funny\')  AS funny_count,
                 (SELECT COUNT(*) FROM review_helpful rh WHERE rh.review_id = r.id AND rh.reaction_type = \'cool\')   AS cool_count,

@@ -15,7 +15,9 @@ Options -Indexes
     # geolocation=(self) allows the "Near me" distance search; other sensors stay blocked
     Header set Permissions-Policy "geolocation=(self), microphone=(), camera=()"
     # Content Security Policy — allows the Google Fonts + Leaflet CDNs we use
-    Header set Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+    # All pages (static + SSR) ship external scripts only, so no 'unsafe-inline'
+    # or nonces are needed in script-src.
+    Header set Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://unpkg.com; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
     # Cross-Origin isolation (defense-in-depth; does not break same-origin API)
     Header always set Cross-Origin-Opener-Policy "same-origin"
     Header always set Cross-Origin-Resource-Policy "same-origin"
@@ -58,5 +60,27 @@ Options -Indexes
 </IfModule>
 
 # Friendly error page
-ErrorDocument 404 /404.html
-ErrorDocument 403 /404.html
+ErrorDocument 404 /404.php
+ErrorDocument 403 /404.php
+
+# Clean URL rewrites — unified PHP frontend
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Don't rewrite existing files or directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Entity detail pretty URLs: /business/123-slug -> business.php?id=123
+    RewriteRule ^business/([0-9]+)(?:-[^/]+|/[^/]+)?/?$ business.php?id=$1 [L,QSA]
+    RewriteRule ^mosque/([0-9]+)(?:-[^/]+|/[^/]+)?/?$ mosque.php?id=$1 [L,QSA]
+    RewriteRule ^fundi/([0-9]+)(?:-[^/]+|/[^/]+)?/?$ fundi.php?id=$1 [L,QSA]
+    RewriteRule ^charity/([0-9]+)(?:-[^/]+|/[^/]+)?/?$ charity.php?id=$1 [L,QSA]
+    RewriteRule ^business-claim/([0-9]+)(?:-[^/]+|/[^/]+)?/?$ business-claim.php?id=$1 [L,QSA]
+
+    # Extensionless URLs: /businesses -> businesses.php, /login -> login.php, etc.
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^([^/]+)/?$ $1.php [L,QSA]
+</IfModule>

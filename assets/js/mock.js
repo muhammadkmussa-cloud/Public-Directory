@@ -59,11 +59,11 @@ window.mockApi = (function () {
   };
 
   const ADS = [
-    { id: 1, placement_id: 3, advertiser_id: 4, title: 'Al-Barakah Restaurant', image_path: 'assets/img/sample/restaurant-1.svg', link_url: 'business.html?id=1', html_content: 'Authentic halal Swahili & Arabic cuisine — family seating.', priority: 10, status: 'active', impressions: 1240, clicks: 86 },
-    { id: 2, placement_id: 3, advertiser_id: 4, title: 'Al-Salam Travel & Tours', image_path: 'assets/img/sample/travel.svg', link_url: 'business.html?id=5', html_content: 'Hajj & Umrah packages — trusted by 2,000+ pilgrims.', priority: 5, status: 'active', impressions: 980, clicks: 54 },
-    { id: 3, placement_id: 1, advertiser_id: 4, title: 'Iqra Bookstore & Islamic Gifts', image_path: 'assets/img/sample/bookstore.svg', link_url: 'business.html?id=4', html_content: 'Qurans, books & gifts for the whole family.', priority: 8, status: 'active', impressions: 2100, clicks: 130 },
-    { id: 4, placement_id: 5, advertiser_id: 4, title: 'Noor Pharmacy', image_path: 'assets/img/sample/pharmacy.svg', link_url: 'business.html?id=3', html_content: 'Trusted community pharmacy — free BP checks.', priority: 6, status: 'active', impressions: 640, clicks: 31 },
-    { id: 5, placement_id: 5, advertiser_id: 4, title: 'Green Bites Halal Cafe', image_path: 'assets/img/sample/restaurant-2.svg', link_url: 'business.html?id=6', html_content: 'Fresh juices & coffee — free Wi-Fi, study corner.', priority: 4, status: 'active', impressions: 412, clicks: 19 },
+    { id: 1, placement_id: 3, advertiser_id: 4, title: 'Al-Barakah Restaurant', image_path: 'assets/img/sample/restaurant-1.svg', link_url: 'business?id=1', html_content: 'Authentic halal Swahili & Arabic cuisine — family seating.', priority: 10, status: 'active', impressions: 1240, clicks: 86, target_category: 'restaurants', target_city: '' },
+    { id: 2, placement_id: 3, advertiser_id: 4, title: 'Al-Salam Travel & Tours', image_path: 'assets/img/sample/travel.svg', link_url: 'business?id=5', html_content: 'Hajj & Umrah packages — trusted by 2,000+ pilgrims.', priority: 5, status: 'active', impressions: 980, clicks: 54, target_category: '', target_city: '' },
+    { id: 3, placement_id: 1, advertiser_id: 4, title: 'Iqra Bookstore & Islamic Gifts', image_path: 'assets/img/sample/bookstore.svg', link_url: 'business?id=4', html_content: 'Qurans, books & gifts for the whole family.', priority: 8, status: 'active', impressions: 2100, clicks: 130, target_category: '', target_city: 'Nairobi' },
+    { id: 4, placement_id: 5, advertiser_id: 4, title: 'Noor Pharmacy', image_path: 'assets/img/sample/pharmacy.svg', link_url: 'business?id=3', html_content: 'Trusted community pharmacy — free BP checks.', priority: 6, status: 'active', impressions: 640, clicks: 31, target_category: 'health-medical', target_city: '' },
+    { id: 5, placement_id: 5, advertiser_id: 4, title: 'Green Bites Halal Cafe', image_path: 'assets/img/sample/restaurant-2.svg', link_url: 'business?id=6', html_content: 'Fresh juices & coffee — free Wi-Fi, study corner.', priority: 4, status: 'active', impressions: 412, clicks: 19, target_category: '', target_city: '' },
   ];
   const ADS_BY_PLACEMENT = { search_results: [1, 2], homepage_header: [3], homepage_sidebar: [], listing_page: [4], detail_page: [4, 5] };
 
@@ -146,7 +146,7 @@ window.mockApi = (function () {
           user_type: 'regular', profile_photo: '', total_reviews: 0, total_checkins: 0,
           email_verified: true,
         };
-        return { ok: true, user: mockUser, redirect: 'dashboard.html' };
+        return { ok: true, user: mockUser, redirect: 'dashboard' };
       }
     }
 
@@ -172,7 +172,7 @@ window.mockApi = (function () {
       if (action === 'register') {
         mockUser = { id: 99, username: parseBody(opts).username, email: parseBody(opts).email, full_name: parseBody(opts).full_name || parseBody(opts).username, user_type: 'regular', profile_photo: '', total_reviews: 0, total_checkins: 0 };
         mockUser.email_verified = false;
-        mockUser.verification_link = 'verify.html?token=mock-verify-token-1234567890abcdef';
+        mockUser.verification_link = 'verify?token=mock-verify-token-1234567890abcdef';
         return mockUser;
       }
       if (action === 'verify') {
@@ -181,11 +181,19 @@ window.mockApi = (function () {
         if (mockUser) mockUser.email_verified = true;
         return { ok: true, user_id: mockUser ? mockUser.id : 99 };
       }
+      if (action === 'update') {
+        const b = parseBody(opts);
+        if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+        if (b.profile_photo) mockUser.profile_photo = b.profile_photo;
+        if (b.full_name) mockUser.full_name = b.full_name;
+        if (b.phone) mockUser.phone = b.phone;
+        return { ok: true, user: mockUser };
+      }
       if (action === 'resend_verification') {
-        return { ok: true, message: 'Confirmation link sent', verification_link: 'verify.html?token=mock-verify-token-1234567890abcdef' };
+        return { ok: true, message: 'Confirmation link sent', verification_link: 'verify?token=mock-verify-token-1234567890abcdef' };
       }
       if (action === 'forgot') {
-        return { ok: true, message: 'Reset link generated', reset_token: 'mock-reset-token-1234567890abcdef', reset_link: 'reset.html?token=mock-reset-token-1234567890abcdef' };
+        return { ok: true, message: 'Reset link generated', reset_token: 'mock-reset-token-1234567890abcdef', reset_link: 'reset?token=mock-reset-token-1234567890abcdef' };
       }
       if (action === 'reset') {
         const b = parseBody(opts);
@@ -197,18 +205,36 @@ window.mockApi = (function () {
 
     if (path.startsWith('api/businesses.php') && action === 'mine') {
       if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
+      if (mockUser.user_type === 'admin') {
+        return BUSINESSES.map(b => ({
+          id: b.id, name: b.name, slug: b.slug, city: b.city, price_range: b.price_range,
+          is_claimed: 1, claim_status: 'approved', is_verified: 1, rating_average: b.rating_average,
+          review_count: b.review_count, checkin_count: b.checkin_count, pending_responses: 0,
+        }));
+      }
       return [
-        { id: 1, name: 'Al-Barakah Restaurant', slug: 'al-barakah-restaurant', city: 'Nairobi', price_range: '$$', is_claimed: 1, is_verified: 1, rating_average: 4.5, review_count: 2, checkin_count: 34, pending_responses: 1 },
+        { id: 1, name: 'Al-Barakah Restaurant', slug: 'al-barakah-restaurant', city: 'Nairobi', price_range: '$$', is_claimed: 1, claim_status: 'approved', is_verified: 1, rating_average: 4.5, review_count: 2, checkin_count: 34, pending_responses: 1 },
+        { id: 2, name: 'Baitul Aman Halal Butcher', slug: 'baitul-aman-halal-butcher', city: 'Mombasa', price_range: '$$', is_claimed: 0, claim_status: 'pending', is_verified: 1, rating_average: 4.2, review_count: 1, checkin_count: 12, pending_responses: 0 },
       ];
     }
 
-    if (path.startsWith('api/businesses.php')) {
+    if (path.startsWith('api/businesses.php') && action === 'claims') {
+      if (!mockUser || mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+      return [
+        { id: 11, business_id: 3, proof: 'I am the store manager — staff ID 3412.', admin_notes: null, is_claimed: 0, claim_status: 'pending', created_at: new Date(Date.now() - 3600000).toISOString(), business_name: 'Noor Pharmacy', city: 'Nairobi', claimant_name: 'Fatima Noor', claimant_email: 'fatima@example.com' },
+        { id: 12, business_id: 6, proof: '', admin_notes: null, is_claimed: 0, claim_status: 'pending', created_at: new Date(Date.now() - 7200000).toISOString(), business_name: 'Green Bites Halal Cafe', city: 'Kisumu', claimant_name: 'Ahmed Yusuf', claimant_email: 'ahmed@example.com' },
+      ];
+    }
+
+    if (path.startsWith('api/businesses.php') && method === 'GET') {
       if (url.searchParams.has('id')) {
-        const b = BUSINESS_DETAILS[url.searchParams.get('id')] || BUSINESS_DETAILS[1];
+        const b = { ...(BUSINESS_DETAILS[url.searchParams.get('id')] || BUSINESS_DETAILS[1]) };
+        const slugMap = { 'Restaurants': 'restaurants', 'Shopping': 'shopping', 'Health & Medical': 'health-medical', 'Education': 'education', 'Services': 'services' };
+        b.category_slug = slugMap[b.category_name] || '';
         return { business: b, photos: [{ id: 1, photo_path: b.primary_photo || '', thumbnail_path: '', caption: '', is_primary: 1 }], reviews: REVIEWS, rating_breakdown: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 }, similar: BUSINESSES.filter(x => x.id !== b.id).slice(0, 3) };
       }
       if (url.searchParams.has('featured')) return BUSINESSES.filter(b => b.is_verified).slice(0, 6);
-      let biz = BUSINESSES;
+      let biz = BUSINESSES.map(b => ({ ...b, is_claimed: b.id === 1 ? 1 : 0, claim_status: b.id === 1 ? 'approved' : 'none' }));
       if (url.searchParams.has('lat') && url.searchParams.has('lng')) {
         const lat = parseFloat(url.searchParams.get('lat'));
         const lng = parseFloat(url.searchParams.get('lng'));
@@ -275,7 +301,7 @@ window.mockApi = (function () {
           const pool = type === 'business' ? BUSINESSES : type === 'mosque' ? MOSQUES : FUNDIS;
           const it = pool.find(x => String(x.id) === id);
           if (!it) return null;
-          return { type, id: Number(id), url: type + '.html?id=' + id, name: it.name || it.full_name, city: it.city, rating_average: it.rating_average, review_count: it.review_count, primary_photo: it.primary_photo || it.profile_photo || null };
+          return { type, id: Number(id), url: type + '?id=' + id, name: it.name || it.full_name, city: it.city, rating_average: it.rating_average, review_count: it.review_count, primary_photo: it.primary_photo || it.profile_photo || null };
         }).filter(Boolean);
       }
       if (method === 'POST') {
@@ -301,8 +327,13 @@ window.mockApi = (function () {
           return ADS.map(a => ({ ...a, placement_name: a.placement_id === 1 ? 'Homepage header' : a.placement_id === 3 ? 'Search results' : a.placement_id === 5 ? 'Detail page' : 'Listing page', placement_location: a.placement_id === 1 ? 'homepage_header' : a.placement_id === 3 ? 'search_results' : a.placement_id === 5 ? 'detail_page' : 'listing_page' }));
         }
         const placement = url.searchParams.get('placement');
+        const category = url.searchParams.get('category') || '';
+        const city = url.searchParams.get('city') || '';
         const ids = ADS_BY_PLACEMENT[placement] || [];
-        return { ads: ids.map(i => ADS.find(a => a.id === i)).filter(Boolean), placement: { location: placement, max_ads: 2 } };
+        const ads = ids.map(i => ADS.find(a => a.id === i)).filter(Boolean)
+          .filter(a => (!category || !a.target_category || a.target_category === category)
+                    && (!city || !a.target_city || a.target_city === city));
+        return { ads, placement: { location: placement, max_ads: 2 } };
       }
       const b = parseBody(opts);
       if (action === 'impression') return { impressions: 1241 };
@@ -322,23 +353,51 @@ window.mockApi = (function () {
       if (q.length < 2) return [];
       const out = [];
       BUSINESSES.filter(b => b.name.toLowerCase().includes(q)).slice(0, 3).forEach(b =>
-        out.push({ type: 'business', label: b.name, sub: 'Business · ' + b.city, url: 'business.html?id=' + b.id }));
+        out.push({ type: 'business', label: b.name, sub: 'Business · ' + b.city, url: 'business?id=' + b.id }));
       MOSQUES.filter(m => m.name.toLowerCase().includes(q)).slice(0, 3).forEach(m =>
-        out.push({ type: 'mosque', label: m.name, sub: 'Mosque · ' + m.city, url: 'mosque.html?id=' + m.id }));
+        out.push({ type: 'mosque', label: m.name, sub: 'Mosque · ' + m.city, url: 'mosque?id=' + m.id }));
       FUNDIS.filter(f => (f.profession || '').toLowerCase().includes(q) || (f.full_name || '').toLowerCase().includes(q)).slice(0, 3).forEach(f =>
-        out.push({ type: 'fundi', label: f.full_name, sub: f.profession + ' · ' + f.city, url: 'fundi.html?id=' + f.id }));
+        out.push({ type: 'fundi', label: f.full_name, sub: f.profession + ' · ' + f.city, url: 'fundi?id=' + f.id }));
       CATEGORIES.filter(c => c.name.toLowerCase().includes(q)).slice(0, 2).forEach(c =>
-        out.push({ type: 'category', label: c.name, sub: 'Category', url: 'businesses.html?category=' + c.slug }));
+        out.push({ type: 'category', label: c.name, sub: 'Category', url: 'businesses?category=' + c.slug }));
       return out.slice(0, 10);
     }
 
     if (path.startsWith('api/activity.php')) {
+      if (url.searchParams.get('photos')) {
+        const listingOf = id => {
+          const b = BUSINESSES.find(x => x.id === id);
+          if (b) return { name: b.name, type: 'business', id: b.id };
+          const m = MOSQUES.find(x => x.id === id);
+          if (m) return { name: m.name, type: 'mosque', id: m.id };
+          const f = FUNDIS.find(x => x.id === id);
+          if (f) return { name: f.full_name, type: 'fundi', id: f.id };
+          return { name: 'Al-Barakah Restaurant', type: 'business', id: 1 };
+        };
+        const out = [];
+        REVIEWS.forEach(r => {
+          const meta = listingOf(r.reviewable_id || r.id);
+          (r.photos || []).forEach((p, i) => {
+            out.push({
+              id: out.length + 1,
+              photo_path: p,
+              thumbnail_path: p,
+              caption: (r.title || 'Photo') + (i > 0 ? ' ' + (i + 1) : ''),
+              user_name: (r.user && r.user.full_name) || '',
+              listing_name: meta.name,
+              listing_url: meta.type + '?id=' + meta.id,
+              listing_type: meta.type,
+            });
+          });
+        });
+        return out.slice(0, 10);
+      }
       return REVIEWS.map(r => ({
         id: r.id, rating: r.rating, title: r.title, content: r.content, created_at: r.created_at,
         reviewable_id: 1, reviewable_type: 'business',
         user_name: r.user.full_name, profile_photo: r.user.profile_photo || '',
         contributor_level: r.user.contributor_level || 1, verification_badge: r.user.verification_badge || 'none',
-        listing_name: 'Al-Barakah Restaurant', listing_url: 'business.html?id=1', listing_type: 'business',
+        listing_name: 'Al-Barakah Restaurant', listing_url: 'business?id=1', listing_type: 'business',
       }));
     }
 
@@ -364,7 +423,14 @@ window.mockApi = (function () {
     if (path.startsWith('api/businesses.php') && method === 'POST') {
       if (!mockUser) throw Object.assign(new Error('Please login to continue'), { status: 401 });
       const b = parseBody(opts);
-      if (b.action === 'claim') return { claimed: true };
+      if (b.action === 'claim') {
+        if (mockUser.user_type === 'admin') return { claimed: true, status: 'approved' };
+        return { requested: true, status: 'pending' };
+      }
+      if (b.action === 'review_claim') {
+        if (mockUser.user_type !== 'admin') throw Object.assign(new Error('Admins only'), { status: 403 });
+        return { reviewed: true };
+      }
       if (b.action === 'respond') return { responded: true };
       if (b.action === 'update') return { updated: true };
     }
@@ -379,6 +445,11 @@ window.mockApi = (function () {
     }
 
     if (path.startsWith('api/donations.php')) {
+      if (method === 'GET' && url.searchParams.get('action') === 'status') {
+        // Demo mode completes donations instantly, so the status poll resolves
+        // instead of hanging for 60s.
+        return { donation_id: 99, status: 'completed', amount: 0, payment_method: 'mpesa', created_at: new Date().toISOString() };
+      }
       const b = parseBody(opts);
       if (b.payment_method === 'mpesa') return { donation_id: 99, status: 'completed', amount: b.amount, payment: { provider: 'mpesa', phone: b.donor_phone, simulated: true }, payment_url: null, message: 'Thank you for your donation! 🙏' };
       if (b.payment_method === 'paypal') return { donation_id: 99, status: 'pending', amount: b.amount, payment: { provider: 'paypal' }, payment_url: 'https://www.sandbox.paypal.com/cgi-bin/webscr', message: 'Donation recorded — please complete the payment to finalize it.' };
@@ -388,6 +459,17 @@ window.mockApi = (function () {
     if (path.startsWith('api/quotes.php')) {
       const b = parseBody(opts);
       return { quote_id: 7, whatsapp_link: 'https://wa.me/254712888999?text=' + encodeURIComponent("Salaam! I'm " + (b.name || '') + ". I'd like a quote for:\n\n" + (b.description || '')), fundi_name: 'Abdullahi Said', fundi_wa: '254712888999', message: 'Request saved — send it to Abdullahi Said on WhatsApp' };
+    }
+
+    if (path.startsWith('api/emergency.php')) {
+      const mockEmergency = [
+        { id: 1, name: 'Ambulance (St. John)', category: 'Medical', phone: '+254111220000', whatsapp: '', description: '24/7 ambulance & emergency medical response.', address: 'Nairobi', city: 'Nairobi', is_24_7: 1, display_order: 1 },
+        { id: 2, name: 'Mama Nguvu Hospital', category: 'Medical', phone: '+254111330000', whatsapp: '254111330000', description: 'Emergency & maternity services.', address: 'Mombasa Road', city: 'Nairobi', is_24_7: 1, display_order: 2 },
+        { id: 3, name: 'Police Emergency', category: 'Safety', phone: '999', whatsapp: '', description: 'National police emergency line.', address: '', city: '', is_24_7: 1, display_order: 0 },
+      ];
+      const city = url.searchParams.get('city');
+      const category = url.searchParams.get('category');
+      return mockEmergency.filter(n => (!city || n.city === city) && (!category || n.category === category));
     }
 
     if (path.startsWith('api/notifications.php')) {
@@ -414,9 +496,9 @@ window.mockApi = (function () {
   let mockUser = null;
   let mockNotifRead = 0;
   const mockNotifs = [
-    { id: 3, type: 'new_review', title: 'New ★★★★★ review', message: 'Yusuf Omar reviewed Al-Barakah Restaurant: "The chicken biryani is incredible…"', link: 'business.html?id=1', is_read: 0, created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
-    { id: 2, type: 'donation', title: 'New donation: KSh 5,000', message: 'You received a donation for Nuru Medical Fund.', link: 'dashboard.html', is_read: 0, created_at: new Date(Date.now() - 86400000).toISOString() },
-    { id: 1, type: 'system', title: 'Welcome to Ummah Directory!', message: 'Your account is ready.', link: 'profile.html', is_read: 1, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
+    { id: 3, type: 'new_review', title: 'New ★★★★★ review', message: 'Yusuf Omar reviewed Al-Barakah Restaurant: "The chicken biryani is incredible…"', link: 'business?id=1', is_read: 0, created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
+    { id: 2, type: 'donation', title: 'New donation: KSh 5,000', message: 'You received a donation for Nuru Medical Fund.', link: 'dashboard', is_read: 0, created_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 1, type: 'system', title: 'Welcome to Ummah Directory!', message: 'Your account is ready.', link: 'profile', is_read: 1, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
   ];
   const mockFavorites = new Set(['business:1', 'mosque:3']); // demo user's saved items
 

@@ -147,6 +147,7 @@ CREATE TABLE `businesses` (
   `checkin_count` INT(11) DEFAULT 0,
   `photo_count` INT(11) DEFAULT 0,
   `is_claimed` TINYINT(1) DEFAULT 0,
+  `claim_status` ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
   `is_verified` TINYINT(1) DEFAULT 0,
   `is_featured` TINYINT(1) DEFAULT 0,
   `is_open` TINYINT(1) DEFAULT 1,
@@ -188,6 +189,25 @@ CREATE TABLE `businesses` (
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `claims` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` INT(11) UNSIGNED NOT NULL,
+  `user_id` INT(11) UNSIGNED NOT NULL,
+  `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `proof` VARCHAR(500) DEFAULT NULL,
+  `admin_notes` VARCHAR(500) DEFAULT NULL,
+  `reviewed_by` INT(11) UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `reviewed_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `business_id` (`business_id`),
+  KEY `user_id` (`user_id`),
+  KEY `status` (`status`),
+  FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `business_categories` (
   `business_id` INT(11) UNSIGNED NOT NULL,
   `category_id` INT(11) UNSIGNED NOT NULL,
@@ -207,6 +227,23 @@ CREATE TABLE `business_attributes` (
   KEY `attribute_id` (`attribute_id`),
   FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`attribute_id`) REFERENCES `attributes`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `business_menu_items` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` INT(11) UNSIGNED NOT NULL,
+  `category` VARCHAR(100) NOT NULL DEFAULT 'Main',
+  `name` VARCHAR(150) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `is_popular` TINYINT(1) NOT NULL DEFAULT 0,
+  `is_halal_certified` TINYINT(1) NOT NULL DEFAULT 1,
+  `photo_url` VARCHAR(255) DEFAULT NULL,
+  `display_order` INT(11) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_biz_cat` (`business_id`, `category`, `display_order`),
+  FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -335,6 +372,10 @@ CREATE TABLE `reviews` (
   `reviewable_id` INT(11) UNSIGNED NOT NULL,
   `reviewable_type` ENUM('business', 'mosque', 'fundi') NOT NULL,
   `rating` TINYINT(1) NOT NULL CHECK (`rating` BETWEEN 1 AND 5),
+  `rating_service` TINYINT(1) DEFAULT NULL CHECK (`rating_service` BETWEEN 1 AND 5),
+  `rating_value` TINYINT(1) DEFAULT NULL CHECK (`rating_value` BETWEEN 1 AND 5),
+  `rating_ambience` TINYINT(1) DEFAULT NULL CHECK (`rating_ambience` BETWEEN 1 AND 5),
+  `rating_cleanliness` TINYINT(1) DEFAULT NULL CHECK (`rating_cleanliness` BETWEEN 1 AND 5),
   `title` VARCHAR(200) DEFAULT NULL,
   `content` TEXT NOT NULL,
   `helpful_count` INT(11) DEFAULT 0,
@@ -626,6 +667,8 @@ CREATE TABLE `ads` (
   `end_date` DATE NOT NULL,
   `status` ENUM('active', 'paused', 'expired', 'draft') DEFAULT 'draft',
   `priority` INT(11) DEFAULT 0,
+  `target_category` VARCHAR(100) DEFAULT NULL,
+  `target_city` VARCHAR(100) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -646,8 +689,8 @@ CREATE TABLE `ad_impressions` (
   `page_url` VARCHAR(255) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `ad_id` (`ad_id`),
   KEY `created_at` (`created_at`),
+  KEY `idx_ad_time` (`ad_id`, `created_at`),
   FOREIGN KEY (`ad_id`) REFERENCES `ads`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -659,8 +702,8 @@ CREATE TABLE `ad_clicks` (
   `page_url` VARCHAR(255) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `ad_id` (`ad_id`),
   KEY `created_at` (`created_at`),
+  KEY `idx_ad_time` (`ad_id`, `created_at`),
   FOREIGN KEY (`ad_id`) REFERENCES `ads`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

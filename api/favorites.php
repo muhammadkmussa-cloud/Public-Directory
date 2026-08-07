@@ -50,7 +50,7 @@ if ($method === 'GET' && $action === 'mine') {
     foreach ($rows as $f) {
         $type = $f['favoritable_type'];
         $id = (int)$f['favoritable_id'];
-        $item = ['type' => $type, 'id' => $id, 'url' => $type . '.html?id=' . $id];
+        $item = ['type' => $type, 'id' => $id, 'url' => $type . '?id=' . $id];
 
         if ($type === 'business') {
             $b = $db->fetchOne(

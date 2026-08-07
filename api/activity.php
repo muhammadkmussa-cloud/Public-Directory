@@ -3,6 +3,7 @@
  * Ummah Directory — Recent Activity feed (homepage)
  *
  *   GET api/activity.php → latest approved reviews with user + listing info
+ *   GET api/activity.php?photos=1 → recent photos for hero carousel
  */
 require __DIR__ . '/_bootstrap.php';
 
@@ -10,6 +11,40 @@ require_method('GET');
 
 $db = Database::getInstance();
 
+// Hero carousel photos
+if (isset($_GET['photos'])) {
+    $rows = $db->fetchAll(
+        "SELECT r.id, r.reviewable_type, r.reviewable_id,
+                rp.photo_path, rp.thumbnail_path, rp.caption,
+                u.full_name AS user_name
+           FROM reviews r
+           JOIN users u ON u.id = r.user_id
+           JOIN review_photos rp ON rp.review_id = r.id
+          WHERE r.is_approved = 1 AND r.is_hidden = 0
+          ORDER BY r.created_at DESC
+          LIMIT 10"
+    );
+
+    // Add listing name and URL for each photo
+    foreach ($rows as &$row) {
+        $type = $row['reviewable_type'];
+        $table = $type === 'business' ? 'businesses' : ($type === 'mosque' ? 'mosques' : 'fundis');
+        if ($type === 'fundi') {
+            $name = $db->fetchValue(
+                'SELECT u2.full_name FROM fundis f JOIN users u2 ON u2.id = f.user_id WHERE f.id = ?',
+                [$row['reviewable_id']]
+            );
+        } else {
+            $name = $db->fetchValue("SELECT name FROM $table WHERE id = ?", [$row['reviewable_id']]);
+        }
+        $row['listing_name'] = $name ?: 'Deleted listing';
+        $row['listing_url'] = $type . '?id=' . (int)$row['reviewable_id'];
+        $row['listing_type'] = $type;
+    }
+    json_ok($rows);
+}
+
+// Regular activity feed
 $rows = $db->fetchAll(
     "SELECT r.id, r.rating, r.title, r.content, r.created_at,
             r.reviewable_id, r.reviewable_type,
@@ -34,7 +69,7 @@ foreach ($rows as &$row) {
         $name = $db->fetchValue("SELECT name FROM $table WHERE id = ?", [$row['reviewable_id']]);
     }
     $row['listing_name'] = $name ?: 'Deleted listing';
-    $row['listing_url'] = $type . '.html?id=' . (int)$row['reviewable_id'];
+    $row['listing_url'] = $type . '?id=' . (int)$row['reviewable_id'];
     $row['listing_type'] = $type;
 }
 

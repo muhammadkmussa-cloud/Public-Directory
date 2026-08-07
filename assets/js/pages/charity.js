@@ -16,13 +16,22 @@ function openDonate(charityId, campaignId, title) {
   document.getElementById('dnEmail').value = '';
   donateModal.classList.add('open');
 }
-function closeDonate() { donateModal.classList.remove('open'); }
+function closeDonate() { if (donateModal) donateModal.classList.remove('open'); }
 
 window.appReady.then(async () => {
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = 'charities.html'; return; }
+  if (!id) { window.location.href = 'charities'; return; }
 
   const el = document.getElementById('charityDetail');
+  if (!el) {
+    /* ---- SSR page: content is server-rendered; route donate to the SPA page ---- */
+    const goSpa = () => { window.location.href = 'charity?id=' + id; };
+    const btns = [document.getElementById('donateTopBtn'), document.getElementById('donateSideBtn')];
+    btns.forEach(b => b && b.addEventListener('click', goSpa));
+    document.querySelectorAll('[data-donate-campaign]').forEach(b => b.addEventListener('click', goSpa));
+    return;
+  }
+
   el.innerHTML = '<div class="panel">Loading…</div>';
 
   try {
@@ -71,7 +80,9 @@ window.appReady.then(async () => {
         } else {
           // Pending (live M-Pesa / bank): show a waiting state and poll the
           // donation status until it clears.
-          alertBox.innerHTML = `<div class="alert alert-success">${esc(res.message)} <small>Waiting for payment confirmation…</small></div>`;
+          const provider = res.payment && res.payment.provider;
+          const bankHint = 'Please complete your bank transfer to finalize your donation.';
+          alertBox.innerHTML = `<div class="alert alert-success">${esc(res.message)} <small>${provider === 'bank' ? bankHint : 'Waiting for M-Pesa confirmation on your phone…'}</small></div>`;
           const donationId = res.donation_id;
           let attempts = 0;
           const poll = async () => {
@@ -83,7 +94,21 @@ window.appReady.then(async () => {
                 setTimeout(() => { closeDonate(); window.location.reload(); }, 1200);
                 return;
               }
-            } catch (err) { /* keep polling */ }
+              if (s.status === 'failed') {
+                alertBox.innerHTML = `<div class="alert alert-error">Payment failed — please try again.</div>`;
+                btn.disabled = false;
+                return;
+              }
+            } catch (err) {
+              // Donation status is only readable by the donor's logged-in
+              // account (401/403 for guests, donations made while logged out
+              // with user_id NULL, or a lapsed session). Stop polling —
+              // confirmation comes through the payment channel.
+              if (err && (err.status === 401 || err.status === 403)) {
+                alertBox.innerHTML = `<div class="alert alert-success">${esc(res.message)} <small>${provider === 'bank' ? bankHint : "You'll receive confirmation on your phone through M-Pesa."}</small></div>`;
+                return;
+              }
+            }
             if (attempts < 20) setTimeout(poll, 3000); // poll every 3s for up to 60s
           };
           poll();
@@ -95,7 +120,7 @@ window.appReady.then(async () => {
     });
 
   } catch (e) {
-    el.innerHTML = emptyState('Charity not found', e.message, '<a class="btn btn-primary btn-sm" href="charities.html">Browse charities</a>');
+    el.innerHTML = emptyState('Charity not found', e.message, '<a class="btn btn-primary btn-sm" href="charities">Browse charities</a>');
   }
 
   function render(c, raised, donors, campaigns) {
@@ -113,7 +138,7 @@ window.appReady.then(async () => {
           ${c.phone ? `<a class="btn btn-primary" href="tel:${esc(c.phone)}">${icon('phone', 14)} Call</a>` : ''}
           ${c.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(c.whatsapp)}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
           ${c.website ? `<a class="btn btn-outline" href="${esc(c.website)}" target="_blank" rel="noopener">${icon('globe', 14)} Website</a>` : ''}
-          <button class="btn btn-ghost share-btn" data-share-title="${esc(c.name)}" data-share-url="charity.html?id=${c.id}" data-share-text="${esc(c.description || c.name)}">${icon('share', 14)} Share</button>
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(c.name)}" data-share-url="charity?id=${c.id}" data-share-text="${esc(c.description || c.name)}">${icon('share', 14)} Share</button>
           <button class="btn btn-primary" id="donateTopBtn">${icon('heart', 14)} Donate</button>
         </div>
       </div>

@@ -9,7 +9,7 @@
  *
  *   GET  api/oauth.php?action=callback&provider=google&code=...&state=...
  *        → exchanges the code, verifies identity, logs the user in, and
- *        redirects to dashboard.html (or returns JSON in dev mode).
+ *        redirects to dashboard (or returns JSON in dev mode).
  *
  * Security: the OAuth `state` parameter is the CSRF protection here — the
  * frontend never sends our CSRF header to Google, so we must not require it.
@@ -92,9 +92,9 @@ if (($_GET['action'] ?? '') === 'callback') {
             json_err($result['error'], 422);
         }
         if (APP_ENV === 'development') {
-            json_ok(['ok' => true, 'user' => $result['user'], 'redirect' => APP_URL . '/dashboard.html']);
+            json_ok(['ok' => true, 'user' => $result['user'], 'redirect' => APP_URL . '/dashboard']);
         }
-        header('Location: ' . APP_URL . '/dashboard.html');
+        header('Location: ' . APP_URL . '/dashboard');
         exit;
     }
 
@@ -137,9 +137,9 @@ if (($_GET['action'] ?? '') === 'callback') {
     }
 
     if (APP_ENV === 'development') {
-        json_ok(['ok' => true, 'user' => $result['user'], 'redirect' => APP_URL . '/dashboard.html']);
+        json_ok(['ok' => true, 'user' => $result['user'], 'redirect' => APP_URL . '/dashboard']);
     }
-    header('Location: ' . APP_URL . '/dashboard.html');
+    header('Location: ' . APP_URL . '/dashboard');
     exit;
 }
 

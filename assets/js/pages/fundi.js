@@ -6,9 +6,26 @@
 
 window.appReady.then(async () => {
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = 'fundis.html'; return; }
+  if (!id) { window.location.href = 'fundis'; return; }
+
+  const visitDateInput = document.getElementById('rvVisitDate');
+  if (visitDateInput) visitDateInput.max = new Date().toISOString().split('T')[0];
 
   const el = document.getElementById('fundiDetail');
+  if (!el) {
+    /* ---- SSR page: content is server-rendered; wire the interactive bits ---- */
+    const mapBox = document.getElementById('fundiMap');
+    if (mapBox && mapBox.dataset.lat && typeof initDetailMap === 'function') {
+      initDetailMap('fundiMap', mapBox.dataset.lat, mapBox.dataset.lng, mapBox.dataset.name, '/fundi/' + id);
+    }
+    loadSponsoredSide();
+    const writeReviewBtn = document.getElementById('writeReviewBtn');
+    if (writeReviewBtn) {
+      writeReviewBtn.addEventListener('click', () => { window.location.href = 'fundi?id=' + id; });
+    }
+    return;
+  }
+
   el.innerHTML = '<div class="panel">Loading profile…</div>';
 
   try {
@@ -20,7 +37,7 @@ window.appReady.then(async () => {
     });
     render(fundi, portfolio, reviews);
     loadSponsoredSide();
-    initDetailMap('fundiMap', fundi.latitude, fundi.longitude, fundi.full_name, 'fundi.html?id=' + fundi.id);
+    initDetailMap('fundiMap', fundi.latitude, fundi.longitude, fundi.full_name, 'fundi?id=' + fundi.id);
     refreshSaveState('fundi', fundi.id);
     wirePhotoInput();
 
@@ -36,10 +53,12 @@ window.appReady.then(async () => {
           'image': fundi.profile_photo || '',
           'url': window.location.href,
         };
-        const script = document.createElement('script');
-        script.type = 'application/ld+json';
-        script.textContent = JSON.stringify(ld);
-        document.head.appendChild(script);
+        if (!document.querySelector('script[type="application/ld+json"]')) {
+          const script = document.createElement('script');
+          script.type = 'application/ld+json';
+          script.textContent = JSON.stringify(ld);
+          document.head.appendChild(script);
+        }
       } catch (e) { /* ignore */ }
     })();
 
@@ -58,6 +77,7 @@ window.appReady.then(async () => {
             rating: document.querySelector('input[name="rating"]:checked')?.value,
             title: document.getElementById('rvTitle').value,
             content: document.getElementById('rvContent').value,
+            visit_date: document.getElementById('rvVisitDate').value || null,
             photo_paths: photoPaths,
           },
         });
@@ -71,7 +91,7 @@ window.appReady.then(async () => {
     });
 
   } catch (e) {
-    el.innerHTML = emptyState('Fundi not found', e.message, '<a class="btn btn-primary btn-sm" href="fundis.html">Browse fundis</a>');
+    el.innerHTML = emptyState('Fundi not found', e.message, '<a class="btn btn-primary btn-sm" href="fundis">Browse fundis</a>');
   }
 
   function render(f, portfolio, reviews) {
@@ -101,7 +121,7 @@ window.appReady.then(async () => {
           ${f.phone ? `<a class="btn btn-primary" href="tel:${esc(f.phone)}">${icon('phone', 14)} Call</a>` : ''}
           ${f.whatsapp ? `<a class="btn btn-outline" href="https://wa.me/${esc(waNumber(f.whatsapp))}" target="_blank" rel="noopener">${icon('wa', 14)} WhatsApp</a>` : ''}
           <button class="btn btn-primary" id="quoteBtnTop">${icon('pen', 14)} Request a quote</button>
-          <button class="btn btn-ghost share-btn" data-share-title="${esc(f.full_name)}" data-share-url="fundi.html?id=${f.id}" data-share-text="${esc(f.profession || f.full_name)}">${icon('share', 14)} Share</button>
+          <button class="btn btn-ghost share-btn" data-share-title="${esc(f.full_name)}" data-share-url="fundi?id=${f.id}" data-share-text="${esc(f.profession || f.full_name)}">${icon('share', 14)} Share</button>
           ${f.hourly_rate_min ? `<a class="btn btn-ghost">${icon('clock', 14)} ${fmtMoney(f.hourly_rate_min)}${f.hourly_rate_max ? '–' + fmtMoney(f.hourly_rate_max) : ''}/hr</a>` : ''}
         </div>
       </div>

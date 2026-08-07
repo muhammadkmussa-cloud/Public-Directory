@@ -48,6 +48,7 @@ if ($method === 'GET' && $action === 'mine') {
 if ($method === 'POST') {
     $user = require_login();
     require_csrf();
+    rate_limit('report_create', 10, 900);
     $body = json_body();
     $action = $body['action'] ?? ($_GET['action'] ?? '');
 
@@ -58,7 +59,7 @@ if ($method === 'POST') {
     $type = $body['reportable_type'] ?? '';
     $id = (int)($body['reportable_id'] ?? 0);
     $reason = $body['reason'] ?? '';
-    $description = trim($body['description'] ?? '');
+    $description = sanitize_text($body['description'] ?? '', 1000);
 
     if (!in_array($type, REPORT_TYPES, true) || $id < 1) {
         json_err('Invalid report target', 422);
@@ -117,10 +118,11 @@ if ($method === 'POST' && ($body_action = (json_body()['action'] ?? '')) === 'ad
         json_err('Admins only', 403);
     }
     require_csrf();
+    rate_limit('report_admin', 60, 300);
     $b = json_body();
     $reportId = (int)($b['report_id'] ?? 0);
     $status = in_array($b['status'] ?? '', ['resolved', 'rejected'], true) ? $b['status'] : 'resolved';
-    $notes = trim($b['notes'] ?? '');
+    $notes = sanitize_text($b['notes'] ?? '', 500);
 
     $db->execute(
         'UPDATE reports SET status = ?, admin_notes = ?, resolved_by = ?, resolved_at = NOW() WHERE id = ?',

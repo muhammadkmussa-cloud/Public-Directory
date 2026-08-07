@@ -8,12 +8,12 @@
 -- ---------- BUSINESSES ----------
 INSERT INTO `businesses`
 (`user_id`, `name`, `slug`, `description`, `short_description`, `listing_type`, `price_range`,
- `is_verified`, `is_featured`, `is_open`, `latitude`, `longitude`, `address`, `city`, `region`, `country`,
+ `is_verified`, `is_featured`, `is_open`, `is_claimed`, `claim_status`, `latitude`, `longitude`, `address`, `city`, `region`, `country`,
  `phone`, `whatsapp`, `email`, `website`, `opening_hours`, `amenities`) VALUES
 (4, 'Al-Barakah Restaurant', 'al-barakah-restaurant',
  'Family-friendly halal restaurant serving authentic Swahili and Arabic cuisine. Famous for our biryani, samosas, and fresh mandazi. Separate family seating available.',
  'Authentic halal Swahili & Arabic cuisine in the heart of the city.',
- 'premier', '$$', 1, 1, 1, -1.28640000, 36.82310000,
+ 'premier', '$$', 1, 1, 1, 1, 'approved', -1.28640000, 36.82310000,
  'Moi Avenue, Next to City Mall', 'Nairobi', 'Nairobi County', 'Kenya',
  '+254 722 111 222', '+254722111222', 'info@albarakah.co.ke', 'https://albarakah.co.ke',
  JSON_OBJECT('monday','08:00 - 22:00','tuesday','08:00 - 22:00','wednesday','08:00 - 22:00','thursday','08:00 - 22:00','friday','14:00 - 23:00','saturday','08:00 - 23:00','sunday','08:00 - 22:00'),
@@ -22,7 +22,7 @@ INSERT INTO `businesses`
 (4, 'Baitul Aman Halal Butcher', 'baitul-aman-halal-butcher',
  'Certified halal butcher offering fresh beef, goat, and chicken. We also stock a wide range of halal groceries and spices.',
  'Fresh certified halal meat and groceries.',
- 'normal', '$$', 1, 0, 1, -4.04350000, 39.66820000,
+ 'normal', '$$', 1, 0, 1, 1, 'approved', -4.04350000, 39.66820000,
  'Digo Road, Opposite Mwembe Tayari', 'Mombasa', 'Mombasa County', 'Kenya',
  '+254 733 222 333', '+254733222333', 'baitulaman@gmail.com', NULL,
  JSON_OBJECT('monday','07:00 - 19:00','tuesday','07:00 - 19:00','wednesday','07:00 - 19:00','thursday','07:00 - 19:00','friday','07:00 - 19:00','saturday','07:00 - 20:00','sunday','08:00 - 18:00'),
@@ -31,7 +31,7 @@ INSERT INTO `businesses`
 (1, 'Noor Pharmacy', 'noor-pharmacy',
  'Community pharmacy offering prescription medicines, wellness products, and free blood-pressure checks. Licensed pharmacists on duty.',
  'Your trusted community pharmacy.',
- 'normal', '$$', 1, 0, 1, -1.29210000, 36.82190000,
+ 'normal', '$$', 1, 0, 1, 1, 'approved', -1.29210000, 36.82190000,
  'Kenyatta Avenue, Pioneer House', 'Nairobi', 'Nairobi County', 'Kenya',
  '+254 711 333 444', NULL, 'hello@noorpharmacy.co.ke', NULL,
  JSON_OBJECT('monday','08:00 - 20:00','tuesday','08:00 - 20:00','wednesday','08:00 - 20:00','thursday','08:00 - 20:00','friday','08:00 - 20:00','saturday','09:00 - 18:00','sunday','Closed'),
@@ -40,7 +40,7 @@ INSERT INTO `businesses`
 (4, 'Iqra Bookstore & Islamic Gifts', 'iqra-bookstore',
  'Quran copies, Islamic books in English, Kiswahili and Arabic, prayer mats, hijabs, and gifts for all occasions.',
  'Books, Qurans and Islamic gifts for the whole family.',
- 'special', '$', 1, 0, 1, -1.29000000, 36.82500000,
+ 'special', '$', 1, 0, 1, 1, 'approved', -1.29000000, 36.82500000,
  'Mfangano Street', 'Nairobi', 'Nairobi County', 'Kenya',
  '+254 700 444 555', '+254700444555', 'iqrabooks@gmail.com', NULL,
  JSON_OBJECT('monday','09:00 - 18:00','tuesday','09:00 - 18:00','wednesday','09:00 - 18:00','thursday','09:00 - 18:00','friday','09:00 - 18:00','saturday','09:00 - 18:00','sunday','Closed'),
@@ -49,7 +49,7 @@ INSERT INTO `businesses`
 (1, 'Al-Salam Travel & Tours', 'al-salam-travel',
  'Hajj and Umrah packages, domestic safaris, and flight bookings. Our team has guided over 2,000 pilgrims.',
  'Hajj, Umrah and holiday packages you can trust.',
- 'premier', '$$$', 1, 1, 1, -4.04350000, 39.66820000,
+ 'premier', '$$$', 1, 1, 1, 1, 'approved', -4.04350000, 39.66820000,
  'Nkrumah Road, Makuti House', 'Mombasa', 'Mombasa County', 'Kenya',
  '+254 755 555 666', '+254755555666', 'bookings@alsalamtravel.co.ke', 'https://alsalamtravel.co.ke',
  JSON_OBJECT('monday','08:30 - 17:30','tuesday','08:30 - 17:30','wednesday','08:30 - 17:30','thursday','08:30 - 17:30','friday','08:30 - 12:30','saturday','Closed','sunday','Closed'),
@@ -58,7 +58,7 @@ INSERT INTO `businesses`
 (1, 'Green Bites Halal Cafe', 'green-bites-cafe',
  'Cozy halal cafe with fresh juices, smoothies, coffee, and light bites. Free Wi-Fi and a quiet study corner.',
  'Fresh juices, coffee & light bites in a cozy space.',
- 'normal', '$', 1, 0, 1, -0.10220000, 34.76170000,
+ 'normal', '$', 1, 0, 1, 1, 'approved', -0.10220000, 34.76170000,
  'Oginga Odinga Street', 'Kisumu', 'Kisumu County', 'Kenya',
  '+254 729 666 777', '+254729666777', 'greenbites@gmail.com', NULL,
  JSON_OBJECT('monday','07:00 - 20:00','tuesday','07:00 - 20:00','wednesday','07:00 - 20:00','thursday','07:00 - 20:00','friday','07:00 - 20:00','saturday','08:00 - 21:00','sunday','08:00 - 18:00'),
@@ -212,8 +212,8 @@ INSERT INTO `donations` (`campaign_id`, `charity_id`, `user_id`, `amount`, `curr
 -- 3=search_results, 4=listing_page, 5=detail_page
 INSERT INTO `ads`
 (`placement_id`, `advertiser_id`, `title`, `image_path`, `link_url`, `html_content`, `impressions`, `clicks`, `start_date`, `end_date`, `status`, `priority`) VALUES
-(3, 4, 'Al-Barakah Restaurant', 'assets/img/sample/restaurant-1.svg', 'business.html?id=1', 'Authentic halal Swahili & Arabic cuisine — family seating.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 10),
-(3, 4, 'Al-Salam Travel & Tours', 'assets/img/sample/travel.svg', 'business.html?id=5', 'Hajj & Umrah packages — trusted by 2,000+ pilgrims.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 5),
-(1, 4, 'Iqra Bookstore & Islamic Gifts', 'assets/img/sample/bookstore.svg', 'business.html?id=4', 'Qurans, books & gifts for the whole family.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 8),
-(5, 4, 'Noor Pharmacy', 'assets/img/sample/pharmacy.svg', 'business.html?id=3', 'Trusted community pharmacy — free BP checks.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 6),
-(5, 4, 'Green Bites Halal Cafe', 'assets/img/sample/restaurant-2.svg', 'business.html?id=6', 'Fresh juices & coffee — free Wi-Fi, study corner.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 4);
+(3, 4, 'Al-Barakah Restaurant', 'assets/img/sample/restaurant-1.svg', 'business?id=1', 'Authentic halal Swahili & Arabic cuisine — family seating.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 10),
+(3, 4, 'Al-Salam Travel & Tours', 'assets/img/sample/travel.svg', 'business?id=5', 'Hajj & Umrah packages — trusted by 2,000+ pilgrims.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 5),
+(1, 4, 'Iqra Bookstore & Islamic Gifts', 'assets/img/sample/bookstore.svg', 'business?id=4', 'Qurans, books & gifts for the whole family.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 8),
+(5, 4, 'Noor Pharmacy', 'assets/img/sample/pharmacy.svg', 'business?id=3', 'Trusted community pharmacy — free BP checks.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 6),
+(5, 4, 'Green Bites Halal Cafe', 'assets/img/sample/restaurant-2.svg', 'business?id=6', 'Fresh juices & coffee — free Wi-Fi, study corner.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'active', 4);

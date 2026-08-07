@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'mine') 
             $names[$key] = $name ?: 'Deleted listing';
         }
         $row['listing_name'] = $names[$key];
-        $row['listing_url'] = $row['reviewable_type'] . '.html?id=' . $row['reviewable_id'];
+        $row['listing_url'] = $row['reviewable_type'] . '?id=' . $row['reviewable_id'];
     }
     attachReviewPhotos($db, $rows);
     json_ok($rows);
@@ -60,8 +60,9 @@ if ($action === 'create') {
     $reviewableId   = (int)($body['reviewable_id'] ?? 0);
     $reviewableType = $body['reviewable_type'] ?? '';
     $rating         = (int)($body['rating'] ?? 0);
-    $title          = trim($body['title'] ?? '');
-    $content        = trim($body['content'] ?? '');
+    $title          = sanitize_line($body['title'] ?? '', 200);
+    $content        = sanitize_text($body['content'] ?? '', 2000);
+    $visitDate      = $body['visit_date'] ?? null;
 
     if (!in_array($reviewableType, ['business', 'mosque', 'fundi'], true)) {
         json_err('Invalid review target', 422);
@@ -77,6 +78,28 @@ if ($action === 'create') {
     }
     if ($content === '' || mb_strlen($content) > 2000) {
         json_err('Review text is required (max 2000 chars)', 422);
+    }
+    // validate visit_date if provided
+    if ($visitDate !== null && $visitDate !== '') {
+        $d = DateTime::createFromFormat('Y-m-d', $visitDate);
+        if (!$d || $d->format('Y-m-d') !== $visitDate) {
+            json_err('Invalid visit date format (use YYYY-MM-DD)', 422);
+        }
+        if ($d > new DateTime()) {
+            json_err('Visit date cannot be in the future', 422);
+        }
+        $visitDate = $d->format('Y-m-d');
+    }
+
+    $rService     = isset($body['rating_service']) && $body['rating_service'] !== '' ? (int)$body['rating_service'] : null;
+    $rValue       = isset($body['rating_value']) && $body['rating_value'] !== '' ? (int)$body['rating_value'] : null;
+    $rAmbience    = isset($body['rating_ambience']) && $body['rating_ambience'] !== '' ? (int)$body['rating_ambience'] : null;
+    $rCleanliness = isset($body['rating_cleanliness']) && $body['rating_cleanliness'] !== '' ? (int)$body['rating_cleanliness'] : null;
+
+    foreach (['service' => $rService, 'value' => $rValue, 'ambience' => $rAmbience, 'cleanliness' => $rCleanliness] as $sName => $sVal) {
+        if ($sVal !== null && ($sVal < 1 || $sVal > 5)) {
+            json_err("Sub-rating for $sName must be between 1 and 5", 422);
+        }
     }
 
     // target must exist
@@ -97,9 +120,9 @@ if ($action === 'create') {
     $db->begin();
     try {
         $reviewId = $db->insert(
-            'INSERT INTO reviews (user_id, reviewable_id, reviewable_type, rating, title, content, is_approved)
-             VALUES (?, ?, ?, ?, ?, ?, 1)',
-            [$user['id'], $reviewableId, $reviewableType, $rating, $title, $content]
+            'INSERT INTO reviews (user_id, reviewable_id, reviewable_type, rating, rating_service, rating_value, rating_ambience, rating_cleanliness, title, content, visit_date, is_approved)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+            [$user['id'], $reviewableId, $reviewableType, $rating, $rService, $rValue, $rAmbience, $rCleanliness, $title, $content, $visitDate]
         );
 
         // optional photos (paths from api/upload.php, e.g. "uploads/reviews/abc.jpg")
@@ -145,7 +168,7 @@ if ($action === 'create') {
                 notify($db, $ownerId, 'new_review',
                     'New ' . str_repeat('★', $rating) . ' review',
                     $user['full_name'] . ' reviewed ' . $bizName . ': "' . mb_substr($content, 0, 80) . '"',
-                    'business.html?id=' . $reviewableId);
+                    'business?id=' . $reviewableId);
             }
         }
 

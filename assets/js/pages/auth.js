@@ -3,6 +3,17 @@
  */
 'use strict';
 
+/**
+ * Resolve the ?next= redirect target safely: only same-site relative
+ * paths are allowed (no scheme, no '//host', no parent traversal). Falls back
+ * to the home page. Prevents an open redirect from a crafted query string.
+ */
+function safeNext() {
+  const next = new URLSearchParams(location.search).get('next');
+  if (next && /^[a-zA-Z0-9_\-./]+(?:[?#].*)?$/.test(next) && !/^\/\//.test(next) && !next.includes('..')) return next;
+  return 'index';
+}
+
 function showAlert(msg, type) {
   const box = document.getElementById('alertBox');
   if (!box) return;
@@ -27,7 +38,7 @@ window.appReady.then(() => {
             session.user = done.user;
             renderAuthNav();
             toast('Signed in with Google');
-            setTimeout(() => (window.location.href = done.redirect || 'index.html'), 500);
+            setTimeout(() => (window.location.href = done.redirect || safeNext()), 500);
             return;
           }
         }
@@ -47,7 +58,7 @@ window.appReady.then(() => {
   /* ---- login ---- */
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
-    if (session.user) { window.location.href = 'profile.html'; return; }
+    if (session.user) { window.location.href = 'profile'; return; }
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
@@ -61,12 +72,12 @@ window.appReady.then(() => {
         session.user = user;
         renderAuthNav();
         if (user.email_verified === false) {
-          showAlert('Your email is not verified yet. <a href="verify.html" style="color:inherit;text-decoration:underline;">Confirm your email</a> to unlock everything.', 'error');
+          showAlert('Your email is not verified yet. <a href="verify" style="color:inherit;text-decoration:underline;">Confirm your email</a> to unlock everything.', 'error');
           btn.disabled = false; btn.textContent = 'Login';
           return;
         }
         toast('Welcome back, ' + (user.full_name || user.username) + '!');
-        setTimeout(() => (window.location.href = 'index.html'), 500);
+        setTimeout(() => (window.location.href = safeNext()), 500);
       } catch (err) {
         showAlert(err.message || 'Login failed', 'error');
         btn.disabled = false; btn.textContent = 'Login';
@@ -147,7 +158,7 @@ window.appReady.then(() => {
     });
   }
 
-  /* ---- verify email (verify.html) ---- */
+  /* ---- verify email (verify) ---- */
   const verifyStatus = document.getElementById('verifyStatus');
   const verifyForm = document.getElementById('verifyForm');
   if (verifyForm) {
@@ -165,7 +176,7 @@ window.appReady.then(() => {
             verifyStatus.hidden = false;
             verifyForm.hidden = true;
             const link = verifyStatus.querySelector('a.btn');
-            if (link) link.href = session.user ? 'profile.html' : 'login.html';
+            if (link) link.href = session.user ? 'profile' : 'login';
           }
         } catch (err) {
           verifyForm.hidden = false;
@@ -218,7 +229,7 @@ window.appReady.then(() => {
           body: { token: token || '', password: pass },
         });
         showAlert(res.message || 'Password reset successfully', 'success');
-        setTimeout(() => (window.location.href = 'login.html'), 1500);
+        setTimeout(() => (window.location.href = 'login'), 1500);
       } catch (err) {
         showAlert(err.message || 'Could not reset password', 'error');
         btn.disabled = false; btn.textContent = 'Reset password';

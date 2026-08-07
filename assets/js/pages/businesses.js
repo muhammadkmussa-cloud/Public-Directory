@@ -16,12 +16,18 @@ window.appReady.then(async () => {
 
   // Prefill from URL
   const params = new URLSearchParams(window.location.search);
-  for (const [key, selId] of [['q', 'f-q'], ['category', 'f-category'], ['location', 'f-city'], ['price', 'f-price'], ['min_rating', 'f-rating'], ['sort', 'f-sort'], ['lat', 'f-lat'], ['lng', 'f-lng'], ['radius', 'f-radius']]) {
+  // Clear invalid hours param
+  const hoursParam = params.get('hours');
+  if (hoursParam && hoursParam !== 'open') {
+    params.delete('hours');
+    history.replaceState(null, '', '?' + params.toString());
+  }
+  for (const [key, selId] of [['q', 'f-q'], ['category', 'f-category'], ['location', 'f-city'], ['price', 'f-price'], ['min_rating', 'f-rating'], ['sort', 'f-sort'], ['hours', 'f-open'], ['lat', 'f-lat'], ['lng', 'f-lng'], ['radius', 'f-radius']]) {
     const el = document.getElementById(selId);
     if (el && params.get(key)) el.value = params.get(key);
   }
   const openEl = document.getElementById('f-open');
-  if (openEl && params.get('open_now')) openEl.checked = true;
+  if (openEl && (params.get('hours') === 'open' || params.get('open_now'))) openEl.checked = true;
 
   wireAutocomplete(document.getElementById('f-q'), document.getElementById('bizSuggest'));
 
@@ -41,6 +47,24 @@ window.appReady.then(async () => {
     nearMeBtn.textContent = active ? '📍 Near me · active' : '📍 Near me';
   }
   setNearMeState(params.get('lat') && params.get('lng'));
+
+  /** Render a Yelp-style "Home › City › Category" breadcrumb from the filters */
+  function renderBreadcrumb(categories) {
+    const el = document.getElementById('breadcrumb');
+    if (!el) return;
+    const fd = formData();
+    const city = fd['location'] || '';
+    const catSlug = fd['category'] || '';
+    const catName = (categories || []).find(c => c.slug === catSlug)?.name || '';
+    const crumbs = ['<a href="index">Home</a>'];
+    if (city) crumbs.push(`<a href="?location=${encodeURIComponent(city)}">${esc(city)}</a>`);
+    if (catSlug && catName) crumbs.push(`<a href="?category=${encodeURIComponent(catSlug)}">${esc(catName)}</a>`);
+    if (crumbs.length === 1) {
+      el.innerHTML = '';
+      return;
+    }
+    el.innerHTML = crumbs.join('<span class="crumb-sep">›</span>');
+  }
 
   /** Use the browser's geolocation, then reload with lat/lng/radius + distance sort */
   nearMeBtn.addEventListener('click', async () => {
@@ -65,14 +89,20 @@ window.appReady.then(async () => {
 
   async function load() {
     const qs = new URLSearchParams(formData()).toString();
+    const adQs = new URLSearchParams({ placement: 'search_results' });
+    const cat = formData()['category'];
+    const city = formData()['location'];
+    if (cat) adQs.set('category', cat);
+    if (city) adQs.set('city', city);
     const [data, adsRes] = await Promise.all([
       api('api/businesses.php?' + qs),
-      api('api/ads.php?placement=search_results').catch(() => null),
+      api('api/ads.php?' + adQs.toString()).catch(() => null),
     ]);
     lastData = data;
     lastAds = (adsRes && adsRes.ads) || [];
 
     countEl.textContent = data.total.toLocaleString() + ' businesses found';
+    renderBreadcrumb(data.categories);
 
     // interleave sponsored ads like Yelp: first on top, others sprinkled in
     const cards = data.items.map(businessCard);
@@ -84,7 +114,7 @@ window.appReady.then(async () => {
 
     resultsEl.innerHTML = cards.length
       ? cards.join('')
-      : emptyState('No businesses found', 'Try adjusting your filters, or move your location marker.', '<a class="btn btn-primary btn-sm" href="businesses.html">View all businesses</a>');
+      : emptyState('No businesses found', 'Try adjusting your filters, or move your location marker.', '<a class="btn btn-primary btn-sm" href="businesses">View all businesses</a>');
 
     // populate filter options (once)
     if (data.categories && document.getElementById('f-category').options.length <= 1) {
@@ -117,7 +147,7 @@ window.appReady.then(async () => {
     containerId: 'mapContainer',
     resultsEl,
     pagEl,
-    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'business', url: 'business.html?id=' + i.id })),
+    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'business', url: 'business?id=' + i.id })),
     onMapShown: (map) => {
       if (userLoc) addUserMarker(map, userLoc.lat, userLoc.lng);
     },

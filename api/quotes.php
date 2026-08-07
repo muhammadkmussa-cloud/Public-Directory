@@ -18,9 +18,9 @@ $db = Database::getInstance();
 $body = json_body();
 
 $fundiId     = (int)($body['fundi_id'] ?? 0);
-$name        = trim($body['name'] ?? '');
+$name        = sanitize_line($body['name'] ?? '', 100);
 $phone       = trim($body['phone'] ?? '');
-$description = trim($body['description'] ?? '');
+$description = sanitize_text($body['description'] ?? '', 2000);
 
 if ($fundiId < 1) {
     json_err('Invalid fundi', 422);

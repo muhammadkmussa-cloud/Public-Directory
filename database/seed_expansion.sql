@@ -307,12 +307,12 @@ INSERT INTO `emergency_numbers` (`name`, `category`, `phone`, `whatsapp`, `descr
 -- ---------- MORE ADS (across all placements) ----------
 INSERT INTO `ads`
 (`placement_id`, `advertiser_id`, `title`, `image_path`, `link_url`, `html_content`, `impressions`, `clicks`, `start_date`, `end_date`, `status`, `priority`) VALUES
-(2, 4, 'The Golden Thread Boutique', 'assets/img/sample/fundi-tailor-1.svg', 'business.html?id=9', 'Modest fashion & custom tailoring.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 9),
-(4, 4, 'Ummah Fitness Center', 'assets/img/sample/mosque-3.svg', 'business.html?id=10', 'Ladies'' hours, group classes, sauna.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 7),
-(4, 4, 'Al-Falaah Hotel', 'assets/img/sample/travel.svg', 'business.html?id=18', 'Halal-friendly hotel with sea views.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 6),
-(1, 4, 'Darajani Spice Market', 'assets/img/sample/restaurant-1.svg', 'business.html?id=7', 'Mombasa''s iconic spice market.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 7),
-(3, 4, 'Sweet Aroma Bakery', 'assets/img/sample/restaurant-2.svg', 'business.html?id=17', 'Fresh mandazi, cakes & Eid specials.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 6),
-(5, 4, 'Safina Travel & Cargo', 'assets/img/sample/travel.svg', 'business.html?id=16', 'Umrah packages & cargo to the Gulf.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 5);
+(2, 4, 'The Golden Thread Boutique', 'assets/img/sample/fundi-tailor-1.svg', 'business?id=9', 'Modest fashion & custom tailoring.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 9),
+(4, 4, 'Ummah Fitness Center', 'assets/img/sample/mosque-3.svg', 'business?id=10', 'Ladies'' hours, group classes, sauna.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 7),
+(4, 4, 'Al-Falaah Hotel', 'assets/img/sample/travel.svg', 'business?id=18', 'Halal-friendly hotel with sea views.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 6),
+(1, 4, 'Darajani Spice Market', 'assets/img/sample/restaurant-1.svg', 'business?id=7', 'Mombasa''s iconic spice market.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 7),
+(3, 4, 'Sweet Aroma Bakery', 'assets/img/sample/restaurant-2.svg', 'business?id=17', 'Fresh mandazi, cakes & Eid specials.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 6),
+(5, 4, 'Safina Travel & Cargo', 'assets/img/sample/travel.svg', 'business?id=16', 'Umrah packages & cargo to the Gulf.', 0, 0, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'active', 5);
 
 -- ---------- FAVORITES (more) ----------
 INSERT INTO `favorites` (`user_id`, `favoritable_id`, `favoritable_type`) VALUES

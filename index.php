@@ -1,37 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ummah Directory — Discover Muslim-Friendly Businesses, Mosques & Fundis</title>
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Ummah Directory">
-  <meta property="og:title" content="Ummah Directory — Discover Muslim-Friendly Businesses, Mosques & Fundis">
-  <meta property="og:description" content="Find halal businesses, mosques with prayer times, and trusted fundis near you.">
-  <meta property="og:url" content="https://yourdomain.com/index.html">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="description" content="Find trusted businesses, mosques, fundis and charities in your community. Read reviews, view prayer times and connect with local Muslim services.">
-  <link rel="icon" href="assets/img/logo.png" type="image/png">
-  <meta name="theme-color" content="#14F528">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="assets/img/logo.png">
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<?php
+/**
+ * Homepage — unified PHP entry point
+ * Replaces index.html with server-rendered meta tags via base.php
+ */
+declare(strict_types=1);
 
-</head>
-<body>
-  <div id="site-header"></div>
+require_once __DIR__ . '/includes/TemplateHelpers.php';
 
-  <main>
+$pageTitle = 'Ummah Directory — Discover Muslim-Friendly Businesses, Mosques & Fundis';
+$pageDescription = 'Find trusted businesses, mosques, fundis and charities in your community. Read reviews, view prayer times and connect with local Muslim services.';
+$pageUrl = getCurrentPageUrl();
+$pageImage = 'https://yourdomain.com/assets/img/logo.png';
+$pageType = 'website';
+$pageScript = 'home.js';
+[$lang, $dir] = getLangAndDir();
+$rawMain = true;
+
+$mainContent = '
     <!-- Hero — Yelp-style white with Find/Near search -->
     <section class="hero">
       <div class="container">
-        <h1 data-i18n="Discover the Best in Your Community">The best halal businesses, mosques & fundis in your community</h1>
+        <h1 data-i18n="Discover the Best in Your Community">The best halal businesses, mosques &amp; fundis in your community</h1>
         <p>Find trusted, reviewed places — from restaurants to skilled workers.</p>
 
-        <form class="yelp-search" id="heroSearch" action="businesses.html" method="get">
+        <form class="yelp-search" id="heroSearch" action="businesses" method="get">
           <div class="search-field autocomplete-wrap">
             <label for="hero-q">Find</label>
             <input id="hero-q" type="text" name="q" placeholder="restaurants, plumbers, mosques…" aria-label="What are you looking for?" autocomplete="off">
@@ -52,6 +44,9 @@
         </div>
       </div>
     </section>
+
+    <!-- Hero Carousel -->
+    <div class="container hero-carousel" id="heroCarousel" aria-label="Featured places carousel"></div>
 
     <!-- Sponsored strip -->
     <div class="container" id="sponsoredStrip"></div>
@@ -77,7 +72,7 @@
             <h2 data-i18n="Featured businesses">Featured businesses</h2>
             <p class="sub">Loved by the community</p>
           </div>
-          <a class="btn btn-outline btn-sm" href="businesses.html">View all</a>
+          <a class="btn btn-outline btn-sm" href="businesses">View all</a>
         </div>
         <div class="grid" id="featuredBusinesses"><!-- filled by home.js --></div>
       </div>
@@ -89,9 +84,9 @@
         <div class="section-head">
           <div>
             <h2 data-i18n="Mosques near you">Mosques near you</h2>
-            <p class="sub">Prayer times, facilities & reviews</p>
+            <p class="sub">Prayer times, facilities &amp; reviews</p>
           </div>
-          <a class="btn btn-outline btn-sm" href="mosques.html">View all</a>
+          <a class="btn btn-outline btn-sm" href="mosques">View all</a>
         </div>
         <div class="grid" id="topMosques"><!-- filled by home.js --></div>
       </div>
@@ -105,7 +100,7 @@
             <h2 data-i18n="Top rated fundis">Top rated fundis</h2>
             <p class="sub">Verified skilled workers</p>
           </div>
-          <a class="btn btn-outline btn-sm" href="fundis.html">View all</a>
+          <a class="btn btn-outline btn-sm" href="fundis">View all</a>
         </div>
         <div class="grid" id="topFundis"><!-- filled by home.js --></div>
       </div>
@@ -117,15 +112,15 @@
         <div class="section-head">
           <div>
             <h2 data-i18n="Active causes">Active causes</h2>
-            <p class="sub">Zakat, sadaqah & relief campaigns</p>
+            <p class="sub">Zakat, sadaqah &amp; relief campaigns</p>
           </div>
-          <a class="btn btn-outline btn-sm" href="charities.html">View all</a>
+          <a class="btn btn-outline btn-sm" href="charities">View all</a>
         </div>
         <div class="grid" id="topCharities"><!-- filled by home.js --></div>
       </div>
     </section>
 
-    <!-- Recent Activity (Yelp's signature homepage feed) -->
+    <!-- Recent Activity (Yelp\'s signature homepage feed) -->
     <section class="section">
       <div class="container">
         <div class="section-head">
@@ -144,24 +139,10 @@
         <div class="panel center" style="background:var(--bg-soft);border:1px solid var(--border);">
           <h2 style="font-size:1.4rem;margin-bottom:.4rem;" data-i18n="Own a business or a skill to share?">Own a business or a skill to share?</h2>
           <p class="muted" style="margin-bottom:1.1rem;">Claim your listing, respond to reviews, and let the community find you.</p>
-          <a class="btn btn-primary" href="register.html">Create a free account</a>
+          <a class="btn btn-primary" href="register">Create a free account</a>
         </div>
       </div>
     </section>
-  </main>
+';
 
-  <div id="site-footer"></div>
-
-  <script src="assets/js/app.js"></script>
-  <script src="assets/js/share.js"></script>
-  <script src="assets/js/mock.js"></script>
-  <script src="assets/js/pages/home.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      });
-    }
-  </script>
-</body>
-</html>
+require_once __DIR__ . '/templates/base.php';

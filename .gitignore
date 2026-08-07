@@ -26,6 +26,7 @@ phpunit.xml.dist
 # Database
 *.sql.bak
 *.db.bak
+database/install.lock
 
 # Cache
 .cache/

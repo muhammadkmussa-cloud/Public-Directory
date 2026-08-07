@@ -9,7 +9,7 @@ window.appReady.then(async () => {
 
   if (!session.user) {
     wrap.innerHTML = emptyState('Please login first', 'You need an account to manage listings.',
-      '<a class="btn btn-primary btn-sm" href="login.html">Login</a>');
+      '<a class="btn btn-primary btn-sm" href="login">Login</a>');
     return;
   }
 
@@ -44,19 +44,27 @@ window.appReady.then(async () => {
         el.innerHTML = '<p class="muted center" style="padding:1rem 0;">No listings yet — claim one below.</p>';
         return;
       }
-      el.innerHTML = rows.map(b => `
+      el.innerHTML = rows.map(b => {
+        const isOwner = b.claim_status === 'approved' || session.user.user_type === 'admin';
+        const claimState = b.claim_status === 'approved'
+          ? ' · Claimed'
+          : b.claim_status === 'pending'
+            ? ' · <b class="green-text">Claim pending approval</b>'
+            : ' · Not claimed';
+        return `
         <div class="dash-listing">
           <div class="dash-listing-info">
             <b>${esc(b.name)}</b>
-            <span class="muted small">${esc(b.city || '')} · ${esc(b.price_range || '$')}${b.is_claimed ? ' · Claimed' : ' · Not claimed'}</span>
+            <span class="muted small">${esc(b.city || '')} · ${esc(b.price_range || '$')}${claimState}</span>
             <span class="muted small">⭐ ${Number(b.rating_average || 0).toFixed(1)} (${b.review_count || 0} reviews) · 📍 ${b.checkin_count || 0} check-ins${b.pending_responses ? ' · <b class="green-text">' + b.pending_responses + ' responses pending</b>' : ''}</span>
           </div>
           <div class="dash-listing-actions">
-            <a class="btn btn-outline btn-xs" href="business.html?id=${b.id}">View</a>
-            <button class="btn btn-outline btn-xs" data-edit-biz="${b.id}">Edit</button>
-            ${b.pending_responses ? `<button class="btn btn-primary btn-xs" data-respond-biz="${b.id}">Respond (${b.pending_responses})</button>` : ''}
+            <a class="btn btn-outline btn-xs" href="business?id=${b.id}">View</a>
+            ${isOwner ? `<button class="btn btn-outline btn-xs" data-edit-biz="${b.id}">Edit</button>` : ''}
+            ${isOwner && b.pending_responses ? `<button class="btn btn-primary btn-xs" data-respond-biz="${b.id}">Respond (${b.pending_responses})</button>` : ''}
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     } catch (e) {
       el.innerHTML = '<p class="muted">Could not load listings: ' + esc(e.message) + '</p>';
     }
@@ -130,7 +138,7 @@ window.appReady.then(async () => {
       const id = claimBtn.dataset.claimBiz;
       try {
         await api('api/businesses.php', { method: 'POST', body: { action: 'claim', business_id: id } });
-        toast('Listing claimed! 🎉');
+        toast('Claim request submitted — pending approval');
         loadListings(); loadClaimable();
       } catch (err) { toast(err.message || 'Could not claim', 'error'); }
       return;
@@ -157,6 +165,7 @@ window.appReady.then(async () => {
       const rows = await api('api/businesses.php?action=mine');
       let reviews = [];
       for (const b of rows) {
+        if (b.claim_status !== 'approved' && session.user.user_type !== 'admin') continue;
         if (forBizId && b.id !== forBizId) continue;
         const det = await api('api/businesses.php?id=' + b.id).catch(() => null);
         if (!det) continue;
@@ -190,7 +199,10 @@ window.appReady.then(async () => {
       const all = await api('api/businesses.php');
       const mine = await api('api/businesses.php?action=mine');
       const mineIds = new Set(mine.map(b => b.id));
-      const claimable = all.items.filter(b => !mineIds.has(b.id) && !b.is_claimed);
+      const claimable = all.items.filter(b => !mineIds.has(b.id)
+        && !b.is_claimed
+        && b.claim_status !== 'pending'
+        && b.claim_status !== 'approved');
       if (!claimable.length) {
         el.innerHTML = '<p class="muted center" style="padding:1rem 0;">No unclaimed listings available.</p>';
         return;

@@ -16,7 +16,7 @@ $body = json_body();
 
 $checkinableId   = (int)($body['checkinable_id'] ?? 0);
 $checkinableType = $body['checkinable_type'] ?? '';
-$note            = trim($body['note'] ?? '');
+$note            = sanitize_text($body['note'] ?? '', 500);
 
 if (!in_array($checkinableType, ['business', 'mosque'], true) || $checkinableId < 1) {
     json_err('Invalid check-in target', 422);

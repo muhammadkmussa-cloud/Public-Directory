@@ -2,20 +2,22 @@
  * Ummah Directory — service worker (PWA)
  * App-shell cache for the static pages; API calls go to the network.
  */
-const CACHE = 'ummah-v3';
+const CACHE = 'ummah-v7';
 const APP_SHELL = [
   './',
-  'index.html',
-  'businesses.html',
-  'mosques.html',
-  'fundis.html',
-  'charities.html',
-  'verify.html',
+  'index',
+  'businesses',
+  'mosques',
+  'fundis',
+  'charities',
+  'business-claim',
+  'verify',
   'assets/css/style.css',
   'assets/js/app.js',
   'assets/js/mock.js',
   'assets/js/map.js',
   'assets/js/share.js',
+  'assets/js/sw-register.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -40,7 +42,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (url.pathname.includes('/api/')) return;
 
-  if (url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.php') || url.pathname.endsWith('/')) {
     event.respondWith(
       fetch(event.request)
         .then((res) => {
@@ -48,7 +50,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((c) => c.put(event.request, copy));
           return res;
         })
-        .catch(() => caches.match(event.request).then((m) => m || caches.match('index.html')))
+        .catch(() => caches.match(event.request).then((m) => m || caches.match('index')))
     );
     return;
   }

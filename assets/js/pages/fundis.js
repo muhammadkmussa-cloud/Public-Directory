@@ -60,7 +60,7 @@ window.appReady.then(async () => {
     countEl.textContent = data.total.toLocaleString() + ' fundis found';
     resultsEl.innerHTML = data.items.length
       ? data.items.map(fundiCard).join('')
-      : emptyState('No fundis found', 'Try a different search, or move your location marker.', '<a class="btn btn-primary btn-sm" href="fundis.html">View all</a>');
+      : emptyState('No fundis found', 'Try a different search, or move your location marker.', '<a class="btn btn-primary btn-sm" href="fundis">View all</a>');
 
     if (data.skills && document.getElementById('f-skill').options.length <= 1) {
       const sel = document.getElementById('f-skill');
@@ -91,7 +91,7 @@ window.appReady.then(async () => {
     containerId: 'mapContainer',
     resultsEl,
     pagEl,
-    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'fundi', url: 'fundi.html?id=' + i.id })),
+    getItems: () => (lastData.items || []).map(i => ({ ...i, type: 'fundi', url: 'fundi?id=' + i.id })),
     onMapShown: (map) => {
       if (userLoc) addUserMarker(map, userLoc.lat, userLoc.lng);
     },
