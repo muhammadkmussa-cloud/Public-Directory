@@ -2,7 +2,7 @@
 
 https://github.com/user-attachments/assets/7f553be6-d574-4e49-8363-9eacc60374e1
 
-![Ummah Directory project film](./public-directory-film-poster.webp)
+[![Ummah Directory project film](./public-directory-film-poster.webp)](https://GitHub.com/user-attachments/assets/7f553be6-d574-4e49-8363-9eacc60374e1)
 
 A Yelp-style directory for the Muslim community — **halal businesses, mosques with prayer times, and trusted fundis (skilled workers)** — with reviews, ratings, check-ins and search.
 
